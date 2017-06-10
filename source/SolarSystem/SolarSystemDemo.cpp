@@ -12,8 +12,8 @@ namespace Rendering
 	const float SolarSystemDemo::LightModulationRate = UCHAR_MAX;
 
 	SolarSystemDemo::SolarSystemDemo(Game & game, const shared_ptr<Camera>& camera) :
-		DrawableGameComponent(game, camera), mPointLight(game, XMFLOAT3(5.0f, 0.0f, 10.0f), 50.0f),
-		mRenderStateHelper(game), mIndexCount(0), mTextPosition(0.0f, 40.0f), mAnimationEnabled(false)
+		DrawableGameComponent(game, camera), mPointLight(game, XMFLOAT3(5.0f, 0.0f, 10.0f), 1000.0f),
+		mRenderStateHelper(game), mKeyboard(nullptr), mIndexCount(0), mTextPosition(0.0f, 40.0f), mAnimationEnabled(false)
 	{
 	}
 
@@ -98,7 +98,7 @@ namespace Rendering
 
 		// Retrieve the keyboard service
 		mKeyboard = reinterpret_cast<KeyboardComponent*>(mGame->Services().GetService(KeyboardComponent::TypeIdClass()));
-		
+
 		// Setup the point light
 		mVSCBufferPerFrameData.LightPosition = mPointLight.Position();
 		mVSCBufferPerFrameData.LightRadius = mPointLight.Radius();

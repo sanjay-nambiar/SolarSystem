@@ -14,7 +14,9 @@ namespace Rendering
 
 	CelestialBody::CelestialBody() :
 		mWorldTransform(MatrixHelper::Identity),
-		mMeanDistance(0), mRotationPeriod(0), mOrbitalPeriod(0), mAxialTilt(0), mDiameter(0), mAlbedo(0)
+		mMeanDistance(0), mRotationPeriod(0), mOrbitalPeriod(0), mAxialTilt(0), mDiameter(0), mAlbedo(0),
+		mRotationRate(0), mOrbitalRate(0),
+		mID(reinterpret_cast<std::uint64_t>(this))
 	{
 	}
 
@@ -28,11 +30,32 @@ namespace Rendering
 		mAxialTilt = axialTilt;
 		mDiameter = diameter;
 		mAlbedo = albedo;
+
+		mRotationRate = XM_2PI / (sRotationPeriod * mRotationPeriod);
+		mOrbitalRate = XM_2PI / (sOrbitalPeriod * mOrbitalPeriod);
+		mTranslation = DirectX::XMMatrixTranslation(sMeanDistance * mMeanDistance, 0, 0);
+
+		GameTime gameTime;
+		Update(gameTime);
 	}
 
-	void CelestialBody::SetParent(const std::shared_ptr<CelestialBody>& parent)
+	void CelestialBody::Adopt(CelestialBody& body)
 	{
-		mParent = parent;
+		if (mChildBodies.find(body.ID()) == mChildBodies.end())
+		{
+			mChildBodies.insert({body.ID(), std::shared_ptr<CelestialBody>(&body)});
+			body.mParent = std::shared_ptr<CelestialBody>(this);
+		}
+	}
+
+	std::uint64_t CelestialBody::ID() const
+	{
+		return mID;
+	}
+
+	const DirectX::XMFLOAT4& CelestialBody::Position() const
+	{
+		return mPosition;
 	}
 
 	const DirectX::XMFLOAT4X4& CelestialBody::WorldTransform() const
@@ -47,19 +70,16 @@ namespace Rendering
 
 	void CelestialBody::Update(const GameTime& gameTime)
 	{
-		static const float rotationRate = XM_2PI / (sRotationPeriod * mRotationPeriod);
-		static const float orbitalRate = XM_2PI / (sOrbitalPeriod * mOrbitalPeriod);
-		static const auto translation = XMMatrixTranslation(sMeanDistance * mMeanDistance, 0, 0);
-
+		const float elapsedSeconds = gameTime.ElapsedGameTimeSeconds().count();
 		static float rotationAngle = 0.0f;
-		rotationAngle += gameTime.ElapsedGameTimeSeconds().count() * rotationRate;
+		rotationAngle += elapsedSeconds * mRotationRate;
 		if (rotationAngle >= XM_2PI || rotationAngle <= -XM_2PI)
 		{
 			rotationAngle = 0.0f;
 		}
 
 		static float orbitalAngle = 0.0f;
-		orbitalAngle += gameTime.ElapsedGameTimeSeconds().count() * orbitalRate;
+		orbitalAngle += elapsedSeconds * mOrbitalRate;
 		if (orbitalAngle >= XM_2PI || orbitalAngle <= -XM_2PI)
 		{
 			orbitalAngle = 0.0f;
@@ -70,9 +90,9 @@ namespace Rendering
 		XMMATRIX transform = XMMatrixScaling(diameter, diameter, diameter);
 		transform = XMMatrixMultiply(transform, XMMatrixRotationY(rotationAngle));
 		transform = XMMatrixMultiply(transform, XMMatrixRotationZ(XMConvertToRadians(mAxialTilt)));
-		transform = XMMatrixMultiply(transform, translation);
-		transform = XMMatrixRotationZ(orbitalAngle);
-		XMLoadFloat4x4(&mWorldTransform);
+		transform = XMMatrixMultiply(transform, mTranslation);
+		transform = XMMatrixMultiply(transform, XMMatrixRotationY(orbitalAngle));
+		XMStoreFloat4x4(&mWorldTransform, transform);
 	}
 
 	void CelestialBody::SetConstantParams(float meanDistance, float rotationPeriod, float orbitalPeriod, float diameter)

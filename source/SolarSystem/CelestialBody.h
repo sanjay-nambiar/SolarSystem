@@ -12,8 +12,10 @@ namespace Rendering
 
 		void SetParams(const std::string& textureName, float meanDistance, float rotationPeriod, float orbitalPeriod,
 			float axialTilt, float diameter, float albedo);
-		void SetParent(const std::shared_ptr<CelestialBody>& parent);
+		void Adopt(CelestialBody& body);
 
+		std::uint64_t ID() const;
+		const DirectX::XMFLOAT4& Position() const;
 		const DirectX::XMFLOAT4X4& WorldTransform() const;
 		const std::string& TextureName() const;
 
@@ -22,6 +24,11 @@ namespace Rendering
 		static void SetConstantParams(float meanDistance, float rotationPeriod, float orbitalPeriod, float diameter);
 	private:
 		DirectX::XMFLOAT4X4 mWorldTransform;
+		DirectX::XMFLOAT4 mPosition;
+
+		std::unordered_map<std::uint64_t, std::shared_ptr<CelestialBody>> mChildBodies;
+		std::shared_ptr<CelestialBody> mParent;
+
 		std::string mTextureName;
 		float mMeanDistance;
 		float mRotationPeriod;
@@ -29,7 +36,11 @@ namespace Rendering
 		float mAxialTilt;
 		float mDiameter;
 		float mAlbedo;
-		std::shared_ptr<CelestialBody> mParent;
+		float mRotationRate;
+		float mOrbitalRate;
+		DirectX::XMMATRIX mTranslation;
+
+		const std::uint64_t mID;
 
 		// Constants
 		static float sMeanDistance;
