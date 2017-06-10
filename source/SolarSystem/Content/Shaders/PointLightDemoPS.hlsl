@@ -5,6 +5,11 @@ cbuffer CBufferPerFrame
 	float3 LightColor;
 };
 
+cbuffer CBufferPerObject
+{
+	float LightingCoefficient;
+}
+
 Texture2D ColorMap;
 SamplerState TextureSampler;
 
@@ -28,6 +33,7 @@ float4 main(VS_OUTPUT IN) : SV_TARGET
 
 	float3 ambient = color.rgb * AmbientColor;
 	float3 diffuse = color.rgb * n_dot_l * LightColor * IN.Attenuation;
+	float3 textureColor = color.rgb * (1 - LightingCoefficient);
 
-	return float4(saturate(ambient + diffuse), color.a);
+	return float4(saturate(ambient + diffuse + textureColor), color.a);
 }

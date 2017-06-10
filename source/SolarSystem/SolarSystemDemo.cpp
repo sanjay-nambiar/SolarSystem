@@ -36,12 +36,14 @@ namespace Rendering
 		// Load a compiled vertex shader
 		vector<char> compiledVertexShader;
 		Utility::LoadBinaryFile(L"Content\\Shaders\\PointLightDemoVS.cso", compiledVertexShader);
-		ThrowIfFailed(mGame->Direct3DDevice()->CreateVertexShader(&compiledVertexShader[0], compiledVertexShader.size(), nullptr, mVertexShader.ReleaseAndGetAddressOf()), "ID3D11Device::CreatedVertexShader() failed.");
+		ThrowIfFailed(mGame->Direct3DDevice()->CreateVertexShader(&compiledVertexShader[0], compiledVertexShader.size(), nullptr, mVertexShader.ReleaseAndGetAddressOf()),
+			"ID3D11Device::CreatedVertexShader() failed.");
 
 		// Load a compiled pixel shader
 		vector<char> compiledPixelShader;
 		Utility::LoadBinaryFile(L"Content\\Shaders\\PointLightDemoPS.cso", compiledPixelShader);
-		ThrowIfFailed(mGame->Direct3DDevice()->CreatePixelShader(&compiledPixelShader[0], compiledPixelShader.size(), nullptr, mPixelShader.ReleaseAndGetAddressOf()), "ID3D11Device::CreatedPixelShader() failed.");
+		ThrowIfFailed(mGame->Direct3DDevice()->CreatePixelShader(&compiledPixelShader[0], compiledPixelShader.size(), nullptr, mPixelShader.ReleaseAndGetAddressOf()),
+			"ID3D11Device::CreatedPixelShader() failed.");
 
 		// Create an input layout
 		D3D11_INPUT_ELEMENT_DESC inputElementDescriptions[] =
@@ -51,7 +53,8 @@ namespace Rendering
 			{ "NORMAL", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
 		};
 
-		ThrowIfFailed(mGame->Direct3DDevice()->CreateInputLayout(inputElementDescriptions, ARRAYSIZE(inputElementDescriptions), &compiledVertexShader[0], compiledVertexShader.size(), mInputLayout.ReleaseAndGetAddressOf()), "ID3D11Device::CreateInputLayout() failed.");
+		ThrowIfFailed(mGame->Direct3DDevice()->CreateInputLayout(inputElementDescriptions, ARRAYSIZE(inputElementDescriptions), &compiledVertexShader[0], compiledVertexShader.size(),
+			mInputLayout.ReleaseAndGetAddressOf()), "ID3D11Device::CreateInputLayout() failed.");
 
 		// Load the model
 		Library::Model model("Content\\Models\\Sphere.obj.bin");
@@ -74,6 +77,9 @@ namespace Rendering
 		constantBufferDesc.ByteWidth = sizeof(PSCBufferPerFrame);
 		ThrowIfFailed(mGame->Direct3DDevice()->CreateBuffer(&constantBufferDesc, nullptr, mPSCBufferPerFrame.ReleaseAndGetAddressOf()), "ID3D11Device::CreateBuffer() failed.");
 
+		constantBufferDesc.ByteWidth = sizeof(PSCBufferPerObject);
+		ThrowIfFailed(mGame->Direct3DDevice()->CreateBuffer(&constantBufferDesc, nullptr, mPSCBufferPerObject.ReleaseAndGetAddressOf()), "ID3D11Device::CreateBuffer() failed.");
+
 		// Load textures for the color and specular maps
 		for (const auto& sectionEntry : mConfigData.GetAllData())
 		{
@@ -88,7 +94,7 @@ namespace Rendering
 			}
 			CelestialBody body;
 			body.SetParams(section.mTextureName, section.mMeanDistance, section.mRotationPeriod, section.mOrbitalPeriod,
-				section.mAxialTilt, section.mDiameter, section.mAlbedo);
+				section.mAxialTilt, section.mDiameter, section.mLit);
 			mCelestialBodies.push_back(body);
 		}
 
@@ -165,9 +171,6 @@ namespace Rendering
 		direct3DDeviceContext->VSSetShader(mVertexShader.Get(), nullptr, 0);
 		direct3DDeviceContext->PSSetShader(mPixelShader.Get(), nullptr, 0);
 
-		ID3D11Buffer* PSConstantBuffers[] = {mPSCBufferPerFrame.Get()};
-		direct3DDeviceContext->PSSetConstantBuffers(0, ARRAYSIZE(PSConstantBuffers), PSConstantBuffers);
-
 		for (const auto& body : mCelestialBodies)
 		{
 			XMMATRIX worldMatrix = XMLoadFloat4x4(&body.WorldTransform());
@@ -180,7 +183,12 @@ namespace Rendering
 			ID3D11Buffer* VSConstantBuffers[] = {mVSCBufferPerFrame.Get(), mVSCBufferPerObject.Get()};
 			direct3DDeviceContext->VSSetConstantBuffers(0, ARRAYSIZE(VSConstantBuffers), VSConstantBuffers);
 
-			ID3D11ShaderResourceView* PSShaderResources[] = { mColorTextures[body.TextureName()].Get()};
+			mPSCBufferPerObjectData.LightingCoefficient = body.Lit();
+			direct3DDeviceContext->UpdateSubresource(mPSCBufferPerObject.Get(), 0, nullptr, &mPSCBufferPerObjectData, 0, 0);
+			ID3D11Buffer* PSConstantBuffers[] = {mPSCBufferPerFrame.Get(), mPSCBufferPerObject.Get()};
+			direct3DDeviceContext->PSSetConstantBuffers(0, ARRAYSIZE(PSConstantBuffers), PSConstantBuffers);
+
+			ID3D11ShaderResourceView* PSShaderResources[] = { mColorTextures[body.TextureName()].Get() };
 			direct3DDeviceContext->PSSetShaderResources(0, ARRAYSIZE(PSShaderResources), PSShaderResources);
 			direct3DDeviceContext->PSSetSamplers(0, 1, SamplerStates::TrilinearWrap.GetAddressOf());
 

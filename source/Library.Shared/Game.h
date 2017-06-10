@@ -39,7 +39,7 @@ namespace Library
 		RTTI_DECLARATIONS(Game, RenderTarget)
 
     public:
-        Game(std::function<void*()> getWindowCallback, std::function<void(SIZE&)> getRenderTargetSizeCallback);
+        Game(std::function<void*()> getWindowCallback, std::function<void(SIZE&)> getRenderTargetSizeCallback, bool isFullScreen);
 		Game(const Game&) = delete;
 		Game& operator=(const Game&) = delete;
 		Game(Game&&) = delete;

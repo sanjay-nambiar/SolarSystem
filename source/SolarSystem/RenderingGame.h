@@ -24,10 +24,10 @@ namespace Rendering
 	public:
 		RenderingGame(std::function<void*()> getWindowCallback, std::function<void(SIZE&)> getRenderTargetSizeCallback);
 
-		virtual void Initialize() override;
-		virtual void Update(const Library::GameTime& gameTime) override;
-		virtual void Draw(const Library::GameTime& gameTime) override;
-		virtual void Shutdown() override;
+		void Initialize() override;
+		void Update(const Library::GameTime& gameTime) override;
+		void Draw(const Library::GameTime& gameTime) override;
+		void Shutdown() override;
 
 		void Exit();
 

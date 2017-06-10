@@ -6,10 +6,10 @@ using namespace Library;
 
 namespace Rendering
 {
-	const XMVECTORF32 RenderingGame::BackgroundColor = Colors::CornflowerBlue;
+	const XMVECTORF32 RenderingGame::BackgroundColor = Colors::Black;
 
 	RenderingGame::RenderingGame(std::function<void*()> getWindowCallback, std::function<void(SIZE&)> getRenderTargetSizeCallback) :
-		Game(getWindowCallback, getRenderTargetSizeCallback), mRenderStateHelper(*this)
+		Game(getWindowCallback, getRenderTargetSizeCallback, false), mRenderStateHelper(*this)
 	{
 	}
 
@@ -35,6 +35,8 @@ namespace Rendering
 		mServices.AddService(Camera::TypeIdClass(), mCamera.get());
 
 		mGrid = make_shared<Grid>(*this, mCamera);
+		mGrid->SetSize(1000);
+		mGrid->SetScale(1000);
 		mComponents.push_back(mGrid);
 
 		mSolarSystemDemo = make_shared<SolarSystemDemo>(*this, mCamera);

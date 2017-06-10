@@ -13,9 +13,9 @@ namespace Library
 	const UINT Game::DefaultMultiSamplingCount = 4;
 	const UINT Game::DefaultBufferCount = 2;
 
-	Game::Game(std::function<void*()> getWindowCallback, std::function<void(SIZE&)> getRenderTargetSizeCallback) :
+	Game::Game(std::function<void*()> getWindowCallback, std::function<void(SIZE&)> getRenderTargetSizeCallback, bool isFullScreen) :
 		RenderTarget(),
-		mFeatureLevel(D3D_FEATURE_LEVEL_9_1), mFrameRate(DefaultFrameRate), mIsFullScreen(false),
+		mFeatureLevel(D3D_FEATURE_LEVEL_9_1), mFrameRate(DefaultFrameRate), mIsFullScreen(isFullScreen),
 		mMultiSamplingCount(DefaultMultiSamplingCount), mMultiSamplingQualityLevels(0),
 		mGetWindow(getWindowCallback), mGetRenderTargetSize(getRenderTargetSizeCallback)
 	{
@@ -213,7 +213,8 @@ namespace Library
 		// Create the Direct3D device object and a corresponding context.
 		ComPtr<ID3D11Device> direct3DDevice;
 		ComPtr<ID3D11DeviceContext> direct3DDeviceContext;
-		ThrowIfFailed(D3D11CreateDevice(nullptr, D3D_DRIVER_TYPE_HARDWARE, NULL, createDeviceFlags, featureLevels, ARRAYSIZE(featureLevels), D3D11_SDK_VERSION, direct3DDevice.ReleaseAndGetAddressOf(), &mFeatureLevel, direct3DDeviceContext.ReleaseAndGetAddressOf()), "D3D11CreateDevice() failed");
+		ThrowIfFailed(D3D11CreateDevice(nullptr, D3D_DRIVER_TYPE_HARDWARE, nullptr, createDeviceFlags, featureLevels, ARRAYSIZE(featureLevels), D3D11_SDK_VERSION, direct3DDevice.ReleaseAndGetAddressOf(),
+			&mFeatureLevel, direct3DDeviceContext.ReleaseAndGetAddressOf()), "D3D11CreateDevice() failed");
 		ThrowIfFailed(direct3DDevice.As(&mDirect3DDevice));
 		ThrowIfFailed(direct3DDeviceContext.As(&mDirect3DDeviceContext));
 

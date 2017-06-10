@@ -79,6 +79,24 @@ namespace Rendering
 			}
 		};
 
+		struct PSCBufferPerObject
+		{
+			float LightingCoefficient;
+			float Padding1;
+			float Padding2;
+			float Padding3;
+
+			PSCBufferPerObject() :
+				LightingCoefficient(1)
+			{
+			}
+
+			PSCBufferPerObject(float lightingCoefficient) :
+				LightingCoefficient(lightingCoefficient)
+			{
+			}
+		};
+
 		void CreateVertexBuffer(const Library::Mesh& mesh, ID3D11Buffer** vertexBuffer) const;
 		void ToggleAnimation();
 		bool UpdateAmbientLight(const Library::GameTime& gameTime);
@@ -90,9 +108,10 @@ namespace Rendering
 		std::vector<CelestialBody> mCelestialBodies;
 		std::unordered_map<std::string, Microsoft::WRL::ComPtr<ID3D11ShaderResourceView>> mColorTextures;
 
-		PSCBufferPerFrame mPSCBufferPerFrameData;
 		VSCBufferPerFrame mVSCBufferPerFrameData;
 		VSCBufferPerObject mVSCBufferPerObjectData;
+		PSCBufferPerFrame mPSCBufferPerFrameData;
+		PSCBufferPerObject mPSCBufferPerObjectData;
 		Library::PointLight mPointLight;
 		Library::RenderStateHelper mRenderStateHelper;
 		Microsoft::WRL::ComPtr<ID3D11VertexShader> mVertexShader;
@@ -103,6 +122,7 @@ namespace Rendering
 		Microsoft::WRL::ComPtr<ID3D11Buffer> mVSCBufferPerFrame;
 		Microsoft::WRL::ComPtr<ID3D11Buffer> mVSCBufferPerObject;
 		Microsoft::WRL::ComPtr<ID3D11Buffer> mPSCBufferPerFrame;
+		Microsoft::WRL::ComPtr<ID3D11Buffer> mPSCBufferPerObject;
 		std::unique_ptr<Library::ProxyModel> mProxyModel;
 		Library::KeyboardComponent* mKeyboard;
 		std::uint32_t mIndexCount;

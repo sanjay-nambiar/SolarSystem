@@ -14,14 +14,14 @@ namespace Rendering
 
 	CelestialBody::CelestialBody() :
 		mWorldTransform(MatrixHelper::Identity),
-		mMeanDistance(0), mRotationPeriod(0), mOrbitalPeriod(0), mAxialTilt(0), mDiameter(0), mAlbedo(0),
-		mRotationRate(0), mOrbitalRate(0),
+		mMeanDistance(0), mRotationPeriod(0), mOrbitalPeriod(0), mAxialTilt(0), mDiameter(0), mLit(0),
+		mRotationRate(0), mOrbitalRate(0), mRotationAngle(0), mOrbitalAngle(0),
 		mID(reinterpret_cast<std::uint64_t>(this))
 	{
 	}
 
 	void CelestialBody::SetParams(const std::string& textureName, float meanDistance, float rotationPeriod, float orbitalPeriod,
-		float axialTilt, float diameter, float albedo)
+		float axialTilt, float diameter, float lit)
 	{
 		mTextureName = textureName;
 		mMeanDistance = meanDistance;
@@ -29,10 +29,16 @@ namespace Rendering
 		mOrbitalPeriod = orbitalPeriod;
 		mAxialTilt = axialTilt;
 		mDiameter = diameter;
-		mAlbedo = albedo;
+		mLit = lit;
 
-		mRotationRate = XM_2PI / (sRotationPeriod * mRotationPeriod);
-		mOrbitalRate = XM_2PI / (sOrbitalPeriod * mOrbitalPeriod);
+		float netRotationPeriod = (sRotationPeriod * mRotationPeriod);
+		mRotationRate = (netRotationPeriod == 0) ? 0 : (XM_2PI / netRotationPeriod);
+		mRotationAngle = 0.0f;
+
+		float netOrbitalPeriod = (sOrbitalPeriod * mOrbitalPeriod);
+		mOrbitalRate = (netOrbitalPeriod == 0) ? 0 : (XM_2PI / netOrbitalPeriod);
+		mOrbitalAngle = 0.0f;
+
 		mTranslation = DirectX::XMMatrixTranslation(sMeanDistance * mMeanDistance, 0, 0);
 
 		GameTime gameTime;
@@ -68,30 +74,33 @@ namespace Rendering
 		return mTextureName;
 	}
 
+	float CelestialBody::Lit() const
+	{
+		return mLit;
+	}
+
 	void CelestialBody::Update(const GameTime& gameTime)
 	{
 		const float elapsedSeconds = gameTime.ElapsedGameTimeSeconds().count();
-		static float rotationAngle = 0.0f;
-		rotationAngle += elapsedSeconds * mRotationRate;
-		if (rotationAngle >= XM_2PI || rotationAngle <= -XM_2PI)
+		mRotationAngle += elapsedSeconds * mRotationRate;
+		if (mRotationAngle >= XM_2PI || mRotationAngle <= -XM_2PI)
 		{
-			rotationAngle = 0.0f;
+			mRotationAngle = 0.0f;
 		}
 
-		static float orbitalAngle = 0.0f;
-		orbitalAngle += elapsedSeconds * mOrbitalRate;
-		if (orbitalAngle >= XM_2PI || orbitalAngle <= -XM_2PI)
+		mOrbitalAngle += elapsedSeconds * mOrbitalRate;
+		if (mOrbitalAngle >= XM_2PI || mOrbitalAngle <= -XM_2PI)
 		{
-			orbitalAngle = 0.0f;
+			mOrbitalAngle = 0.0f;
 		}
 
-		static float diameter = sDiameter * mDiameter;
+		float diameter = sDiameter * mDiameter;
 
 		XMMATRIX transform = XMMatrixScaling(diameter, diameter, diameter);
-		transform = XMMatrixMultiply(transform, XMMatrixRotationY(rotationAngle));
+		transform = XMMatrixMultiply(transform, XMMatrixRotationY(mRotationAngle));
 		transform = XMMatrixMultiply(transform, XMMatrixRotationZ(XMConvertToRadians(mAxialTilt)));
 		transform = XMMatrixMultiply(transform, mTranslation);
-		transform = XMMatrixMultiply(transform, XMMatrixRotationY(orbitalAngle));
+		transform = XMMatrixMultiply(transform, XMMatrixRotationY(mOrbitalAngle));
 		XMStoreFloat4x4(&mWorldTransform, transform);
 	}
 

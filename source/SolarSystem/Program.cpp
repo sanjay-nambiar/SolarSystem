@@ -6,7 +6,7 @@ using namespace std;
 
 void Shutdown(const wstring& className);
 
-const SIZE RenderTargetSize = { 1024, 768 };
+const SIZE RenderTargetSize = { 1280, 720 };
 HWND mWindowHandle;
 WNDCLASSEX mWindow;
 unique_ptr<RenderingGame> mGame;
@@ -43,7 +43,7 @@ int WINAPI WinMain(HINSTANCE instance, HINSTANCE previousInstance, LPSTR command
 	mGame->UpdateRenderTargetSize();
 	mGame->Initialize();
 
-	MSG message = { 0 };
+	MSG message = { nullptr };
 
 	try
 	{

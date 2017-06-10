@@ -13,7 +13,7 @@ namespace Rendering
 		float mOrbitalPeriod;
 		float mAxialTilt;
 		float mDiameter;
-		float mAlbedo;
+		float mLit;
 		std::string mOrbitCenter;
 	};
 
