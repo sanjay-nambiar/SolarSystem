@@ -1,4 +1,5 @@
 #include "pch.h"
+#include "ConfigDataLoader.h"
 
 using namespace std;
 using namespace Library;
@@ -30,6 +31,8 @@ namespace Rendering
 
 	void SolarSystemDemo::Initialize()
 	{
+		mConfigData.LoadConfigData("Content\\CelestialBodies.ini");
+
 		// Load a compiled vertex shader
 		vector<char> compiledVertexShader;
 		Utility::LoadBinaryFile(L"Content\\Shaders\\PointLightDemoVS.cso", compiledVertexShader);

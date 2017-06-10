@@ -221,6 +221,7 @@ IF EXIST "$(ProjectDir)content" xcopy /E /Y "$(ProjectDir)Content" "$(OutDir)Con
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="ConfigDataLoader.cpp" />
     <ClCompile Include="pch.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Create</PrecompiledHeader>
@@ -232,6 +233,8 @@ IF EXIST "$(ProjectDir)content" xcopy /E /Y "$(ProjectDir)Content" "$(OutDir)Con
     <ClCompile Include="RenderingGame.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="CelestialBody.h" />
+    <ClInclude Include="ConfigDataLoader.h" />
     <ClInclude Include="pch.h" />
     <ClInclude Include="SolarSystemDemo.h" />
     <ClInclude Include="RenderingGame.h" />
@@ -242,6 +245,7 @@ IF EXIST "$(ProjectDir)content" xcopy /E /Y "$(ProjectDir)Content" "$(OutDir)Con
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
+    <None Include="Content\CelestialBodies.ini" />
     <None Include="Content\Models\PointLightProxy.obj.bin">
       <DeploymentContent>true</DeploymentContent>
     </None>

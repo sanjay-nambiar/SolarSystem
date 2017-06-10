@@ -5,6 +5,7 @@
 #include "PointLight.h"
 #include <DirectXMath.h>
 #include <DirectXColors.h>
+#include "ConfigDataLoader.h"
 
 namespace Library
 {
@@ -30,9 +31,9 @@ namespace Rendering
 		bool AnimationEnabled() const;
 		void SetAnimationEnabled(bool enabled);
 
-		virtual void Initialize() override;
-		virtual void Update(const Library::GameTime& gameTime) override;
-		virtual void Draw(const Library::GameTime& gameTime) override;
+		void Initialize() override;
+		void Update(const Library::GameTime& gameTime) override;
+		void Draw(const Library::GameTime& gameTime) override;
 
 	private:
 		struct VSCBufferPerFrame
@@ -102,6 +103,7 @@ namespace Rendering
 		static const float LightModulationRate;
 		static const float LightMovementRate;
 
+		ConfigDataLoader mConfigData;
 		PSCBufferPerFrame mPSCBufferPerFrameData;
 		DirectX::XMFLOAT4X4 mWorldMatrix;
 		VSCBufferPerFrame mVSCBufferPerFrameData;
