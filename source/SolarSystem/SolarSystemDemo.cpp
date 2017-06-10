@@ -1,5 +1,5 @@
 #include "pch.h"
-#include "ConfigDataLoader.h"
+#include "ConfigData.h"
 
 using namespace std;
 using namespace Library;
@@ -9,12 +9,10 @@ namespace Rendering
 {
 	RTTI_DEFINITIONS(SolarSystemDemo)
 
-	const float SolarSystemDemo::ModelRotationRate = XM_PI;
 	const float SolarSystemDemo::LightModulationRate = UCHAR_MAX;
-	const float SolarSystemDemo::LightMovementRate = 10.0f;
 
 	SolarSystemDemo::SolarSystemDemo(Game & game, const shared_ptr<Camera>& camera) :
-		DrawableGameComponent(game, camera), mWorldMatrix(MatrixHelper::Identity), mPointLight(game, XMFLOAT3(5.0f, 0.0f, 10.0f), 50.0f),
+		DrawableGameComponent(game, camera), mPointLight(game, XMFLOAT3(5.0f, 0.0f, 10.0f), 50.0f),
 		mRenderStateHelper(game), mIndexCount(0), mTextPosition(0.0f, 40.0f), mAnimationEnabled(false)
 	{
 	}
@@ -32,6 +30,8 @@ namespace Rendering
 	void SolarSystemDemo::Initialize()
 	{
 		mConfigData.LoadConfigData("Content\\CelestialBodies.ini");
+		const SectionData& data = mConfigData.GetConstantsData();
+		CelestialBody::SetConstantParams(data.mMeanDistance, data.mRotationPeriod, data.mOrbitalPeriod, data.mDiameter);
 
 		// Load a compiled vertex shader
 		vector<char> compiledVertexShader;
@@ -74,15 +74,23 @@ namespace Rendering
 		constantBufferDesc.ByteWidth = sizeof(PSCBufferPerFrame);
 		ThrowIfFailed(mGame->Direct3DDevice()->CreateBuffer(&constantBufferDesc, nullptr, mPSCBufferPerFrame.ReleaseAndGetAddressOf()), "ID3D11Device::CreateBuffer() failed.");
 
-		constantBufferDesc.ByteWidth = sizeof(PSCBufferPerObject);
-		ThrowIfFailed(mGame->Direct3DDevice()->CreateBuffer(&constantBufferDesc, nullptr, mPSCBufferPerObject.ReleaseAndGetAddressOf()), "ID3D11Device::CreateBuffer() failed.");
-
 		// Load textures for the color and specular maps
-		wstring textureName = L"Content\\Textures\\EarthComposite.dds";
-		ThrowIfFailed(CreateDDSTextureFromFile(mGame->Direct3DDevice(), textureName.c_str(), nullptr, mColorTexture.ReleaseAndGetAddressOf()), "CreateDDSTextureFromFile() failed.");
-
-		textureName = L"Content\\Textures\\EarthSpecularMap.png";
-		ThrowIfFailed(CreateWICTextureFromFile(mGame->Direct3DDevice(), textureName.c_str(), nullptr, mSpecularMap.ReleaseAndGetAddressOf()), "CreateWICTextureFromFile() failed.");
+		for (const auto& sectionEntry : mConfigData.GetAllData())
+		{
+			const auto& section = sectionEntry.second;
+			if (mColorTextures.find(section.mTextureName) == mColorTextures.end())
+			{
+				wstring textureName = L"Content\\Textures\\" + Utility::ToWideString(section.mTextureName);
+				Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> textureView;
+				ThrowIfFailed(CreateWICTextureFromFile(mGame->Direct3DDevice(), textureName.c_str(), nullptr,
+					textureView.ReleaseAndGetAddressOf()), "CreateWICTextureFromFile() failed.");
+				mColorTextures.insert({section.mTextureName, textureView});
+			}
+			CelestialBody body;
+			body.SetParams(section.mTextureName, section.mMeanDistance, section.mRotationPeriod, section.mOrbitalPeriod,
+				section.mAxialTilt, section.mDiameter, section.mAlbedo);
+			mCelestialBodies.push_back(body);
+		}
 
 		// Create text rendering helpers
 		mSpriteBatch = make_unique<SpriteBatch>(mGame->Direct3DDeviceContext());
@@ -99,7 +107,7 @@ namespace Rendering
 
 		// Update the vertex and pixel shader constant buffers
 		mGame->Direct3DDeviceContext()->UpdateSubresource(mVSCBufferPerFrame.Get(), 0, nullptr, &mVSCBufferPerFrameData, 0, 0);
-		mGame->Direct3DDeviceContext()->UpdateSubresource(mPSCBufferPerObject.Get(), 0, nullptr, &mPSCBufferPerObjectData, 0, 0);
+		mGame->Direct3DDeviceContext()->UpdateSubresource(mPSCBufferPerFrame.Get(), 0, nullptr, &mPSCBufferPerFrameData, 0, 0);
 
 		// Load a proxy model for the point light
 		mProxyModel = make_unique<ProxyModel>(*mGame, mCamera, "Content\\Models\\PointLightProxy.obj.bin", 0.5f);
@@ -109,14 +117,6 @@ namespace Rendering
 
 	void SolarSystemDemo::Update(const GameTime& gameTime)
 	{
-		static float angle = 0.0f;
-
-		if (mAnimationEnabled)
-		{
-			angle += gameTime.ElapsedGameTimeSeconds().count() * ModelRotationRate;
-			XMStoreFloat4x4(&mWorldMatrix, XMMatrixRotationY(angle));
-		}
-
 		if (mKeyboard != nullptr)
 		{
 			if (mKeyboard->WasKeyPressedThisFrame(Keys::Space))
@@ -124,11 +124,27 @@ namespace Rendering
 				ToggleAnimation();
 			}
 
-			UpdateAmbientLight(gameTime);
-			UpdatePointLight(gameTime);
-			UpdateSpecularLight(gameTime);
+			bool updatePSCBufferPerFrame = UpdateAmbientLight(gameTime);
+			bool updateCBuffersPerFrame = UpdatePointLight(gameTime);
+
+			if (updateCBuffersPerFrame)
+			{
+				mGame->Direct3DDeviceContext()->UpdateSubresource(mVSCBufferPerFrame.Get(), 0, nullptr, &mVSCBufferPerFrameData, 0, 0);
+				mGame->Direct3DDeviceContext()->UpdateSubresource(mPSCBufferPerFrame.Get(), 0, nullptr, &mPSCBufferPerFrameData, 0, 0);
+			}
+			else if(updatePSCBufferPerFrame)
+			{
+				mGame->Direct3DDeviceContext()->UpdateSubresource(mPSCBufferPerFrame.Get(), 0, nullptr, &mPSCBufferPerFrameData, 0, 0);
+			}
 		}
 
+		if (mAnimationEnabled)
+		{
+			for (auto& body : mCelestialBodies)
+			{
+				body.Update(gameTime);
+			}
+		}
 		mProxyModel->Update(gameTime);
 	}
 
@@ -149,27 +165,27 @@ namespace Rendering
 		direct3DDeviceContext->VSSetShader(mVertexShader.Get(), nullptr, 0);
 		direct3DDeviceContext->PSSetShader(mPixelShader.Get(), nullptr, 0);
 
-		XMMATRIX worldMatrix = XMLoadFloat4x4(&mWorldMatrix);
-		XMMATRIX wvp = worldMatrix * mCamera->ViewProjectionMatrix();
-		wvp = XMMatrixTranspose(wvp);
-		XMStoreFloat4x4(&mVSCBufferPerObjectData.WorldViewProjection, wvp);
-		XMStoreFloat4x4(&mVSCBufferPerObjectData.World, XMMatrixTranspose(worldMatrix));
-		direct3DDeviceContext->UpdateSubresource(mVSCBufferPerObject.Get(), 0, nullptr, &mVSCBufferPerObjectData, 0, 0);
-
-		ID3D11Buffer* VSConstantBuffers[] = { mVSCBufferPerFrame.Get(), mVSCBufferPerObject.Get() };
-		direct3DDeviceContext->VSSetConstantBuffers(0, ARRAYSIZE(VSConstantBuffers), VSConstantBuffers);
-
-		mPSCBufferPerFrameData.CameraPosition = mCamera->Position();
-		direct3DDeviceContext->UpdateSubresource(mPSCBufferPerFrame.Get(), 0, nullptr, &mPSCBufferPerFrameData, 0, 0);
-
-		ID3D11Buffer* PSConstantBuffers[] = { mPSCBufferPerFrame.Get(), mPSCBufferPerObject.Get() };
+		ID3D11Buffer* PSConstantBuffers[] = {mPSCBufferPerFrame.Get()};
 		direct3DDeviceContext->PSSetConstantBuffers(0, ARRAYSIZE(PSConstantBuffers), PSConstantBuffers);
 
-		ID3D11ShaderResourceView* PSShaderResources[] = { mColorTexture.Get(), mSpecularMap.Get() };
-		direct3DDeviceContext->PSSetShaderResources(0, ARRAYSIZE(PSShaderResources), PSShaderResources);
-		direct3DDeviceContext->PSSetSamplers(0, 1, SamplerStates::TrilinearWrap.GetAddressOf());
+		for (const auto& body : mCelestialBodies)
+		{
+			XMMATRIX worldMatrix = XMLoadFloat4x4(&body.WorldTransform());
+			XMMATRIX wvp = worldMatrix * mCamera->ViewProjectionMatrix();
+			wvp = XMMatrixTranspose(wvp);
+			XMStoreFloat4x4(&mVSCBufferPerObjectData.WorldViewProjection, wvp);
+			XMStoreFloat4x4(&mVSCBufferPerObjectData.World, XMMatrixTranspose(worldMatrix));
 
-		direct3DDeviceContext->DrawIndexed(mIndexCount, 0, 0);
+			direct3DDeviceContext->UpdateSubresource(mVSCBufferPerObject.Get(), 0, nullptr, &mVSCBufferPerObjectData, 0, 0);
+			ID3D11Buffer* VSConstantBuffers[] = {mVSCBufferPerFrame.Get(), mVSCBufferPerObject.Get()};
+			direct3DDeviceContext->VSSetConstantBuffers(0, ARRAYSIZE(VSConstantBuffers), VSConstantBuffers);
+
+			ID3D11ShaderResourceView* PSShaderResources[] = { mColorTextures[body.TextureName()].Get()};
+			direct3DDeviceContext->PSSetShaderResources(0, ARRAYSIZE(PSShaderResources), PSShaderResources);
+			direct3DDeviceContext->PSSetSamplers(0, 1, SamplerStates::TrilinearWrap.GetAddressOf());
+
+			direct3DDeviceContext->DrawIndexed(mIndexCount, 0, 0);
+		}
 
 		mProxyModel->Draw(gameTime);
 
@@ -179,8 +195,6 @@ namespace Rendering
 
 		wostringstream helpLabel;
 		helpLabel << "Ambient Intensity (+PgUp/-PgDn): " << mPSCBufferPerFrameData.AmbientColor.x << "\n";
-		helpLabel << L"Specular Intensity (+Insert/-Delete): " << mPSCBufferPerObjectData.SpecularColor.x << "\n";
-		helpLabel << L"Specular Power (+O/-P): " << mPSCBufferPerObjectData.SpecularPower << "\n";
 		helpLabel << L"Point Light Intensity (+Home/-End): " << mPSCBufferPerFrameData.LightColor.x << "\n";
 		helpLabel << L"Point Light Radius (+V/-B): " << mVSCBufferPerFrameData.LightRadius << "\n";
 		helpLabel << L"Move Point Light (8/2, 4/6, 3/9)" << "\n";
@@ -223,7 +237,7 @@ namespace Rendering
 		mAnimationEnabled = !mAnimationEnabled;
 	}
 
-	void SolarSystemDemo::UpdateAmbientLight(const GameTime& gameTime)
+	bool SolarSystemDemo::UpdateAmbientLight(const GameTime& gameTime)
 	{
 		static float ambientIntensity = mPSCBufferPerFrameData.AmbientColor.x;
 
@@ -235,7 +249,7 @@ namespace Rendering
 			ambientIntensity = min(ambientIntensity, 1.0f);
 
 			mPSCBufferPerFrameData.AmbientColor = XMFLOAT3(ambientIntensity, ambientIntensity, ambientIntensity);
-			mGame->Direct3DDeviceContext()->UpdateSubresource(mPSCBufferPerFrame.Get(), 0, nullptr, &mPSCBufferPerFrameData, 0, 0);
+			return true;
 		}
 		else if (mKeyboard->IsKeyDown(Keys::PageDown) && ambientIntensity > 0.0f)
 		{
@@ -243,11 +257,12 @@ namespace Rendering
 			ambientIntensity = max(ambientIntensity, 0.0f);
 
 			mPSCBufferPerFrameData.AmbientColor = XMFLOAT3(ambientIntensity, ambientIntensity, ambientIntensity);
-			mGame->Direct3DDeviceContext()->UpdateSubresource(mPSCBufferPerFrame.Get(), 0, nullptr, &mPSCBufferPerFrameData, 0, 0);
+			return true;
 		}
+		return false;
 	}
 
-	void SolarSystemDemo::UpdatePointLight(const GameTime& gameTime)
+	bool SolarSystemDemo::UpdatePointLight(const GameTime& gameTime)
 	{
 		static float lightIntensity = mPSCBufferPerFrameData.LightColor.x;
 
@@ -276,51 +291,6 @@ namespace Rendering
 			updateCBuffer = true;
 		}
 
-		// Move point light
-		XMFLOAT3 movementAmount = Vector3Helper::Zero;
-		if (mKeyboard != nullptr)
-		{
-			if (mKeyboard->IsKeyDown(Keys::NumPad4))
-			{
-				movementAmount.x = -1.0f;
-			}
-
-			if (mKeyboard->IsKeyDown(Keys::NumPad6))
-			{
-				movementAmount.x = 1.0f;
-			}
-
-			if (mKeyboard->IsKeyDown(Keys::NumPad9))
-			{
-				movementAmount.y = 1.0f;
-			}
-
-			if (mKeyboard->IsKeyDown(Keys::NumPad3))
-			{
-				movementAmount.y = -1.0f;
-			}
-
-			if (mKeyboard->IsKeyDown(Keys::NumPad8))
-			{
-				movementAmount.z = -1.0f;
-			}
-
-			if (mKeyboard->IsKeyDown(Keys::NumPad2))
-			{
-				movementAmount.z = 1.0f;
-			}
-		}
-
-		if (movementAmount.x != 0.0f || movementAmount.y != 0.0f || movementAmount.z != 0.0f)
-		{
-			XMVECTOR movement = XMLoadFloat3(&movementAmount) * LightMovementRate * elapsedTime;
-			mPointLight.SetPosition(mPointLight.PositionVector() + movement);
-			mProxyModel->SetPosition(mPointLight.Position());
-			mVSCBufferPerFrameData.LightPosition = mPointLight.Position();
-			mPSCBufferPerFrameData.LightPosition = mPointLight.Position();
-			updateCBuffer = true;
-		}
-
 		// Update the light's radius
 		if (mKeyboard->IsKeyDown(Keys::V))
 		{
@@ -340,58 +310,9 @@ namespace Rendering
 		}
 
 		if (updateCBuffer)
-		{			
-			mGame->Direct3DDeviceContext()->UpdateSubresource(mVSCBufferPerFrame.Get(), 0, nullptr, &mVSCBufferPerFrameData, 0, 0);
-			mGame->Direct3DDeviceContext()->UpdateSubresource(mPSCBufferPerFrame.Get(), 0, nullptr, &mPSCBufferPerFrameData, 0, 0);
-		}
-	}
-
-	void SolarSystemDemo::UpdateSpecularLight(const GameTime& gameTime)
-	{
-		static float specularIntensity = mPSCBufferPerObjectData.SpecularColor.x;
-		bool updateCBuffer = false;
-
-		if (mKeyboard->IsKeyDown(Keys::Insert) && specularIntensity < 1.0f)
 		{
-			specularIntensity += gameTime.ElapsedGameTimeSeconds().count();
-			specularIntensity = min(specularIntensity, 1.0f);
-
-			mPSCBufferPerObjectData.SpecularColor = XMFLOAT3(specularIntensity, specularIntensity, specularIntensity);
-			updateCBuffer = true;
+			return true;
 		}
-
-		if (mKeyboard->IsKeyDown(Keys::Delete) && specularIntensity > 0.0f)
-		{
-			specularIntensity -= gameTime.ElapsedGameTimeSeconds().count();
-			specularIntensity = max(specularIntensity, 0.0f);
-
-			mPSCBufferPerObjectData.SpecularColor = XMFLOAT3(specularIntensity, specularIntensity, specularIntensity);
-			updateCBuffer = true;
-		}
-
-		static float specularPower = mPSCBufferPerObjectData.SpecularPower;
-
-		if (mKeyboard->IsKeyDown(Keys::O) && specularPower < UCHAR_MAX)
-		{
-			specularPower += LightModulationRate * gameTime.ElapsedGameTimeSeconds().count();
-			specularPower = min(specularPower, static_cast<float>(UCHAR_MAX));
-
-			mPSCBufferPerObjectData.SpecularPower = specularPower;
-			updateCBuffer = true;
-		}
-
-		if (mKeyboard->IsKeyDown(Keys::P) && specularPower > 1.0f)
-		{
-			specularPower -= LightModulationRate * gameTime.ElapsedGameTimeSeconds().count();
-			specularPower = max(specularPower, 1.0f);
-
-			mPSCBufferPerObjectData.SpecularPower = specularPower;
-			updateCBuffer = true;
-		}
-
-		if (updateCBuffer)
-		{
-			mGame->Direct3DDeviceContext()->UpdateSubresource(mPSCBufferPerObject.Get(), 0, nullptr, &mPSCBufferPerObjectData, 0, 0);
-		}
+		return false;
 	}
 }

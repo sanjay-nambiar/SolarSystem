@@ -5,7 +5,8 @@
 #include "PointLight.h"
 #include <DirectXMath.h>
 #include <DirectXColors.h>
-#include "ConfigDataLoader.h"
+#include "ConfigData.h"
+#include "CelestialBody.h"
 
 namespace Library
 {
@@ -59,8 +60,6 @@ namespace Rendering
 
 		struct PSCBufferPerFrame
 		{
-			DirectX::XMFLOAT3 CameraPosition;
-			float Padding;
 			DirectX::XMFLOAT3 AmbientColor;
 			float Padding2;
 			DirectX::XMFLOAT3 LightPosition;
@@ -69,46 +68,31 @@ namespace Rendering
 			float Padding4;
 
 			PSCBufferPerFrame() :
-				CameraPosition(Library::Vector3Helper::Zero), AmbientColor(Library::Vector3Helper::Zero),
+				AmbientColor(Library::Vector3Helper::Zero),
 				LightPosition(Library::Vector3Helper::Zero), LightColor(Library::Vector3Helper::Zero)
 			{
 			}
 
-			PSCBufferPerFrame(const DirectX::XMFLOAT3& cameraPosition, const DirectX::XMFLOAT3& ambientColor, const DirectX::XMFLOAT3& lightPosition, const DirectX::XMFLOAT3& lightColor) :
-				CameraPosition(cameraPosition), AmbientColor(ambientColor),
-				LightPosition(lightPosition), LightColor(lightColor)
+			PSCBufferPerFrame(const DirectX::XMFLOAT3& ambientColor, const DirectX::XMFLOAT3& lightPosition, const DirectX::XMFLOAT3& lightColor) :
+				AmbientColor(ambientColor), LightPosition(lightPosition), LightColor(lightColor)
 			{
 			}
 		};
 
-		struct PSCBufferPerObject
-		{
-			DirectX::XMFLOAT3 SpecularColor;
-			float SpecularPower;
-
-			PSCBufferPerObject() :
-				SpecularColor(1.0f, 1.0f, 1.0f), SpecularPower(128.0f) { }
-
-			PSCBufferPerObject(const DirectX::XMFLOAT3& specularColor, float specularPower) :
-				SpecularColor(specularColor), SpecularPower(specularPower) { }
-		};
-
 		void CreateVertexBuffer(const Library::Mesh& mesh, ID3D11Buffer** vertexBuffer) const;
 		void ToggleAnimation();
-		void UpdateAmbientLight(const Library::GameTime& gameTime);
-		void UpdatePointLight(const Library::GameTime& gameTime);
-		void UpdateSpecularLight(const Library::GameTime& gameTime);
-				
-		static const float ModelRotationRate;
-		static const float LightModulationRate;
-		static const float LightMovementRate;
+		bool UpdateAmbientLight(const Library::GameTime& gameTime);
+		bool UpdatePointLight(const Library::GameTime& gameTime);
 
-		ConfigDataLoader mConfigData;
+		static const float LightModulationRate;
+
+		ConfigData mConfigData;
+		std::vector<CelestialBody> mCelestialBodies;
+		std::unordered_map<std::string, Microsoft::WRL::ComPtr<ID3D11ShaderResourceView>> mColorTextures;
+
 		PSCBufferPerFrame mPSCBufferPerFrameData;
-		DirectX::XMFLOAT4X4 mWorldMatrix;
 		VSCBufferPerFrame mVSCBufferPerFrameData;
-		VSCBufferPerObject mVSCBufferPerObjectData;		
-		PSCBufferPerObject mPSCBufferPerObjectData;		
+		VSCBufferPerObject mVSCBufferPerObjectData;
 		Library::PointLight mPointLight;
 		Library::RenderStateHelper mRenderStateHelper;
 		Microsoft::WRL::ComPtr<ID3D11VertexShader> mVertexShader;
@@ -119,9 +103,6 @@ namespace Rendering
 		Microsoft::WRL::ComPtr<ID3D11Buffer> mVSCBufferPerFrame;
 		Microsoft::WRL::ComPtr<ID3D11Buffer> mVSCBufferPerObject;
 		Microsoft::WRL::ComPtr<ID3D11Buffer> mPSCBufferPerFrame;
-		Microsoft::WRL::ComPtr<ID3D11Buffer> mPSCBufferPerObject;
-		Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> mColorTexture;
-		Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> mSpecularMap;
 		std::unique_ptr<Library::ProxyModel> mProxyModel;
 		Library::KeyboardComponent* mKeyboard;
 		std::uint32_t mIndexCount;
