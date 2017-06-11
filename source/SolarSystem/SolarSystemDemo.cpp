@@ -9,7 +9,7 @@ namespace Rendering
 {
 	RTTI_DEFINITIONS(SolarSystemDemo)
 
-	const float SolarSystemDemo::LightModulationRate = UCHAR_MAX;
+	const float SolarSystemDemo::LightModulationRate = 10000000;
 
 	SolarSystemDemo::SolarSystemDemo(Game & game, const shared_ptr<Camera>& camera) :
 		DrawableGameComponent(game, camera), mRootBody(nullptr), mSunLight(game, XMFLOAT3(0.0f, 0.0f, 0.0f), 63300000.0f),

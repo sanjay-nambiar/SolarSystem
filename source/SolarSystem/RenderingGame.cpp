@@ -34,11 +34,6 @@ namespace Rendering
 		mComponents.push_back(mCamera);
 		mServices.AddService(Camera::TypeIdClass(), mCamera.get());
 
-		mGrid = make_shared<Grid>(*this, mCamera);
-		mGrid->SetSize(1000);
-		mGrid->SetScale(1000);
-		mComponents.push_back(mGrid);
-
 		mSolarSystemDemo = make_shared<SolarSystemDemo>(*this, mCamera);
 		mComponents.push_back(mSolarSystemDemo);
 
@@ -57,12 +52,6 @@ namespace Rendering
 		if (mKeyboard->WasKeyPressedThisFrame(Keys::Escape) || mGamePad->WasButtonPressedThisFrame(GamePadButtons::Back))
 		{
 			Exit();
-		}
-
-		if (mKeyboard->WasKeyPressedThisFrame(Keys::G) || mGamePad->WasButtonPressedThisFrame(GamePadButtons::DPadUp))
-		{
-			mGrid->SetEnabled(!mGrid->Enabled());
-			mGrid->SetVisible(!mGrid->Visible());
 		}
 
 		Game::Update(gameTime);
