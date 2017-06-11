@@ -1,39 +1,26 @@
 #pragma once
 
 #include <regex>
-#include <map>
 #include <unordered_map>
+#include "CeledtialBodyData.h"
 
 namespace Rendering
 {
-	struct SectionData
-	{
-		std::string mName;
-		std::string mTextureName;
-		float mMeanDistance;
-		float mRotationPeriod;
-		float mOrbitalPeriod;
-		float mAxialTilt;
-		float mDiameter;
-		float mReflectance;
-		float mIsLit;
-		std::string mParent;
-	};
-
 	class ConfigData
 	{
 	public:
 		void LoadConfigData(const std::string& filename);
-		const SectionData& GetConstantsData() const;
-		const SectionData& GetSectionData(const std::string& sectionName) const;
-		const std::unordered_map<std::string, SectionData>& GetAllData() const;
+		const CelestialBodyData& GetConstantsData() const;
+		const CelestialBodyData& GetCelestialBodyData(const std::string& sectionName) const;
+		const std::unordered_map<std::string, CelestialBodyData>& GetAllData() const;
 	private:
-		void CreateDataMap(const std::string& filename);
-		void CreateDataObject();
+		typedef std::unordered_map<std::string, std::unordered_map<std::string, std::string>> ConfigDataMapType;
 
-		std::unordered_map<std::string, std::unordered_map<std::string, std::string>> mConfigDataMap;
-		std::unordered_map<std::string, SectionData> mConfigData;
-		SectionData mConstantsData;
+		static void PopulateDataMap(const std::string& filename, ConfigDataMapType& dataMap);
+		void PopulateDataObject(const ConfigDataMapType& configDataMap);
+
+		std::unordered_map<std::string, CelestialBodyData> mConfigData;
+		CelestialBodyData mConstantsData;
 
 		static const std::regex CommentPattern;
 		static const std::regex SectionTagPattern;

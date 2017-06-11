@@ -14,34 +14,23 @@ namespace Rendering
 
 	CelestialBody::CelestialBody() :
 		mWorldTransform(MatrixHelper::Identity), mParent(nullptr),
-		mMeanDistance(0), mRotationPeriod(0), mOrbitalPeriod(0), mAxialTilt(0), mDiameter(0), mReflectance(1), mIsLit(0),
 		mRotationRate(0), mOrbitalRate(0), mRotationAngle(0), mOrbitalAngle(0),
 		mID(reinterpret_cast<std::uint64_t>(this))
 	{
 	}
 
-	void CelestialBody::SetParams(const std::string& name, const std::string& textureName, float meanDistance, float rotationPeriod, float orbitalPeriod,
-		float axialTilt, float diameter, float reflectance, float isLit)
+	void CelestialBody::SetParams(const CelestialBodyData& data)
 	{
-		mName = name;
-		mTextureName = textureName;
-		mMeanDistance = meanDistance;
-		mRotationPeriod = rotationPeriod;
-		mOrbitalPeriod = orbitalPeriod;
-		mAxialTilt = axialTilt;
-		mDiameter = diameter;
-		mReflectance = reflectance;
-		mIsLit = isLit;
-
-		float netRotationPeriod = (sRotationPeriod * mRotationPeriod);
+		mData = data;
+		float netRotationPeriod = (sRotationPeriod * mData.mRotationPeriod);
 		mRotationRate = (netRotationPeriod == 0) ? 0 : (XM_2PI / netRotationPeriod);
 		mRotationAngle = 0.0f;
 
-		float netOrbitalPeriod = (sOrbitalPeriod * mOrbitalPeriod);
+		float netOrbitalPeriod = (sOrbitalPeriod * mData.mOrbitalPeriod);
 		mOrbitalRate = (netOrbitalPeriod == 0) ? 0 : (XM_2PI / netOrbitalPeriod);
 		mOrbitalAngle = 0.0f;
 
-		mTranslation = DirectX::XMMatrixTranslation(sMeanDistance * mMeanDistance, 0, 0);
+		mTranslation = DirectX::XMMatrixTranslation(sMeanDistance * mData.mMeanDistance, 0, 0);
 
 		GameTime gameTime;
 		Update(gameTime);
@@ -51,11 +40,15 @@ namespace Rendering
 	{
 		mChildBodies.push_back(&body);
 		body.mParent = this;
+
+		// calculate distance from the outer edge of the parent instead of origin
+		float childDistanceFromOrigin = (sMeanDistance * body.mData.mMeanDistance) + (mData.mDiameter / 2) * 20;
+		body.mTranslation = DirectX::XMMatrixTranslation(childDistanceFromOrigin, 0, 0);
 	}
 
-	std::string CelestialBody::Name() const
+	const CelestialBodyData& CelestialBody::Data() const
 	{
-		return mName;
+		return mData;
 	}
 
 	const DirectX::XMFLOAT4& CelestialBody::Position() const
@@ -66,21 +59,6 @@ namespace Rendering
 	const DirectX::XMFLOAT4X4& CelestialBody::WorldTransform() const
 	{
 		return mWorldTransform;
-	}
-
-	const std::string& CelestialBody::TextureName() const
-	{
-		return mTextureName;
-	}
-
-	float CelestialBody::Reflectance() const
-	{
-		return mReflectance;
-	}
-
-	float CelestialBody::IsLit() const
-	{
-		return mIsLit;
 	}
 
 	CelestialBody* CelestialBody::Parent() const
@@ -103,19 +81,13 @@ namespace Rendering
 			mOrbitalAngle = 0.0f;
 		}
 
-		float diameter = sDiameter * mDiameter;
+		float diameter = sDiameter * mData.mDiameter;
 
 		XMMATRIX transform = XMMatrixScaling(diameter, diameter, diameter);
 		transform = XMMatrixMultiply(transform, XMMatrixRotationY(mRotationAngle));
-		transform = XMMatrixMultiply(transform, XMMatrixRotationZ(XMConvertToRadians(mAxialTilt)));
+		transform = XMMatrixMultiply(transform, XMMatrixRotationZ(XMConvertToRadians(mData.mAxialTilt)));
 		transform = XMMatrixMultiply(transform, mTranslation);
 		transform = XMMatrixMultiply(transform, XMMatrixRotationY(mOrbitalAngle));
-		/*if (mParent)
-		{
-			const XMFLOAT4& parentPosition = mParent->Position();
-			XMMATRIX translationMatrix = XMMatrixTranslation(parentPosition.x, parentPosition.y, parentPosition.z);
-			transform = XMMatrixMultiply(transform, translationMatrix);
-		}*/
 		XMStoreFloat4x4(&mWorldTransform, transform);
 	}
 

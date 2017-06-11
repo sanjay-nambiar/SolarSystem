@@ -235,6 +235,7 @@ IF EXIST "$(ProjectDir)content" xcopy /E /Y "$(ProjectDir)Content" "$(OutDir)Con
     <ClCompile Include="RenderingGame.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="CeledtialBodyData.h" />
     <ClInclude Include="CelestialBody.h" />
     <ClInclude Include="CeletialLight.h" />
     <ClInclude Include="ConfigData.h" />

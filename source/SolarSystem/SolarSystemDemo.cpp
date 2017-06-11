@@ -30,7 +30,7 @@ namespace Rendering
 	void SolarSystemDemo::Initialize()
 	{
 		mConfigData.LoadConfigData("Content\\CelestialBodies.ini");
-		const SectionData& data = mConfigData.GetConstantsData();
+		const CelestialBodyData& data = mConfigData.GetConstantsData();
 		CelestialBody::SetConstantParams(data.mMeanDistance, data.mRotationPeriod, data.mOrbitalPeriod, data.mDiameter);
 
 		// Load a compiled vertex shader
@@ -100,8 +100,7 @@ namespace Rendering
 				mColorTextures.insert({section.mTextureName, textureView});
 			}
 			CelestialBody body;
-			body.SetParams(section.mName, section.mTextureName, section.mMeanDistance, section.mRotationPeriod, section.mOrbitalPeriod,
-				section.mAxialTilt, section.mDiameter, section.mReflectance, section.mIsLit);
+			body.SetParams(section);
 			mCelestialBodies.push_back(body);
 			bodiesMap.insert({section.mName, &mCelestialBodies.back()});
 			parents.push_back(section.mParent);
@@ -194,13 +193,14 @@ namespace Rendering
 			ID3D11Buffer* VSConstantBuffers[] = {mVSCBufferPerFrame.Get(), mVSCBufferPerObject.Get()};
 			direct3DDeviceContext->VSSetConstantBuffers(0, ARRAYSIZE(VSConstantBuffers), VSConstantBuffers);
 
-			mPSCBufferPerObjectData.LightingCoefficient = body.IsLit();
-			mPSCBufferPerObjectData.Reflectance = body.Reflectance();
+			const auto& data = body.Data();
+			mPSCBufferPerObjectData.LightingCoefficient = data.mIsLit;
+			mPSCBufferPerObjectData.Reflectance = data.mReflectance;
 			direct3DDeviceContext->UpdateSubresource(mPSCBufferPerObject.Get(), 0, nullptr, &mPSCBufferPerObjectData, 0, 0);
 			ID3D11Buffer* PSConstantBuffers[] = {mPSCBufferPerFrame.Get(), mPSCBufferPerObject.Get()};
 			direct3DDeviceContext->PSSetConstantBuffers(0, ARRAYSIZE(PSConstantBuffers), PSConstantBuffers);
 
-			ID3D11ShaderResourceView* PSShaderResources[] = { mColorTextures[body.TextureName()].Get() };
+			ID3D11ShaderResourceView* PSShaderResources[] = { mColorTextures[data.mTextureName].Get() };
 			direct3DDeviceContext->PSSetShaderResources(0, ARRAYSIZE(PSShaderResources), PSShaderResources);
 			direct3DDeviceContext->PSSetSamplers(0, 1, SamplerStates::TrilinearWrap.GetAddressOf());
 

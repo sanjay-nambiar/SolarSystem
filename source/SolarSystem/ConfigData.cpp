@@ -11,26 +11,27 @@ namespace Rendering
 
 	void ConfigData::LoadConfigData(const std::string& filename)
 	{
-		CreateDataMap(filename);
-		CreateDataObject();
+		ConfigDataMapType dataMap;
+		PopulateDataMap(filename, dataMap);
+		PopulateDataObject(dataMap);
 	}
 
-	const SectionData& ConfigData::GetConstantsData() const
+	const CelestialBodyData& ConfigData::GetConstantsData() const
 	{
 		return mConstantsData;
 	}
 
-	const SectionData& ConfigData::GetSectionData(const std::string& sectionName) const
+	const CelestialBodyData& ConfigData::GetCelestialBodyData(const std::string& sectionName) const
 	{
 		return mConfigData.at(sectionName);
 	}
 
-	const std::unordered_map<std::string, SectionData>& ConfigData::GetAllData() const
+	const std::unordered_map<std::string, CelestialBodyData>& ConfigData::GetAllData() const
 	{
 		return mConfigData;
 	}
 
-	void ConfigData::CreateDataMap(const std::string& filename)
+	void ConfigData::PopulateDataMap(const std::string& filename, ConfigDataMapType& dataMap)
 	{
 		std::ifstream file;
 		file.open(filename);
@@ -55,15 +56,15 @@ namespace Rendering
 			}
 			else if (std::regex_search(line, matches, AttributeLinePattern))
 			{
-				mConfigDataMap[sectionName].insert({matches.str(1), matches.str(2)});
+				dataMap[sectionName].insert({matches.str(1), matches.str(2)});
 			}
 		}
 		file.close();
 	}
 
-	void ConfigData::CreateDataObject()
+	void ConfigData::PopulateDataObject(const ConfigDataMapType& configDataMap)
 	{
-		for (const auto& sectionEntry : mConfigDataMap)
+		for (const auto& sectionEntry : configDataMap)
 		{
 			const auto& section = sectionEntry.second;
 

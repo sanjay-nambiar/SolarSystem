@@ -81,6 +81,7 @@
 #include "KeyboardComponent.h"
 #include "GamePadComponent.h"
 #include "Grid.h"
+#include "CeledtialBodyData.h"
 
 // Library.Desktop
 #include "UtilityWin32.h"
