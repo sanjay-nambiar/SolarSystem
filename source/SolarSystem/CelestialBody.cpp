@@ -14,14 +14,14 @@ namespace Rendering
 
 	CelestialBody::CelestialBody() :
 		mWorldTransform(MatrixHelper::Identity), mParent(nullptr),
-		mMeanDistance(0), mRotationPeriod(0), mOrbitalPeriod(0), mAxialTilt(0), mDiameter(0), mLit(0),
+		mMeanDistance(0), mRotationPeriod(0), mOrbitalPeriod(0), mAxialTilt(0), mDiameter(0), mReflectance(1), mIsLit(0),
 		mRotationRate(0), mOrbitalRate(0), mRotationAngle(0), mOrbitalAngle(0),
 		mID(reinterpret_cast<std::uint64_t>(this))
 	{
 	}
 
 	void CelestialBody::SetParams(const std::string& name, const std::string& textureName, float meanDistance, float rotationPeriod, float orbitalPeriod,
-		float axialTilt, float diameter, float lit)
+		float axialTilt, float diameter, float reflectance, float isLit)
 	{
 		mName = name;
 		mTextureName = textureName;
@@ -30,7 +30,8 @@ namespace Rendering
 		mOrbitalPeriod = orbitalPeriod;
 		mAxialTilt = axialTilt;
 		mDiameter = diameter;
-		mLit = lit;
+		mReflectance = reflectance;
+		mIsLit = isLit;
 
 		float netRotationPeriod = (sRotationPeriod * mRotationPeriod);
 		mRotationRate = (netRotationPeriod == 0) ? 0 : (XM_2PI / netRotationPeriod);
@@ -72,9 +73,14 @@ namespace Rendering
 		return mTextureName;
 	}
 
-	float CelestialBody::Lit() const
+	float CelestialBody::Reflectance() const
 	{
-		return mLit;
+		return mReflectance;
+	}
+
+	float CelestialBody::IsLit() const
+	{
+		return mIsLit;
 	}
 
 	CelestialBody* CelestialBody::Parent() const

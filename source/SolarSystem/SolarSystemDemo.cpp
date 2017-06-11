@@ -12,7 +12,7 @@ namespace Rendering
 	const float SolarSystemDemo::LightModulationRate = UCHAR_MAX;
 
 	SolarSystemDemo::SolarSystemDemo(Game & game, const shared_ptr<Camera>& camera) :
-		DrawableGameComponent(game, camera), mRootBody(nullptr), mPointLight(game, XMFLOAT3(0.0f, 0.0f, 0.0f), 20000.0f),
+		DrawableGameComponent(game, camera), mRootBody(nullptr), mSunLight(game, XMFLOAT3(0.0f, 0.0f, 0.0f), 63300000.0f),
 		mRenderStateHelper(game), mKeyboard(nullptr), mIndexCount(0), mTextPosition(0.0f, 40.0f), mAnimationEnabled(false)
 	{
 	}
@@ -35,13 +35,13 @@ namespace Rendering
 
 		// Load a compiled vertex shader
 		vector<char> compiledVertexShader;
-		Utility::LoadBinaryFile(L"Content\\Shaders\\PointLightDemoVS.cso", compiledVertexShader);
+		Utility::LoadBinaryFile(L"Content\\Shaders\\SolarSystemDemoVS.cso", compiledVertexShader);
 		ThrowIfFailed(mGame->Direct3DDevice()->CreateVertexShader(&compiledVertexShader[0], compiledVertexShader.size(), nullptr, mVertexShader.ReleaseAndGetAddressOf()),
 			"ID3D11Device::CreatedVertexShader() failed.");
 
 		// Load a compiled pixel shader
 		vector<char> compiledPixelShader;
-		Utility::LoadBinaryFile(L"Content\\Shaders\\PointLightDemoPS.cso", compiledPixelShader);
+		Utility::LoadBinaryFile(L"Content\\Shaders\\SolarSystemDemoPS.cso", compiledPixelShader);
 		ThrowIfFailed(mGame->Direct3DDevice()->CreatePixelShader(&compiledPixelShader[0], compiledPixelShader.size(), nullptr, mPixelShader.ReleaseAndGetAddressOf()),
 			"ID3D11Device::CreatedPixelShader() failed.");
 
@@ -69,16 +69,20 @@ namespace Rendering
 		D3D11_BUFFER_DESC constantBufferDesc = { 0 };
 		constantBufferDesc.ByteWidth = sizeof(VSCBufferPerFrame);
 		constantBufferDesc.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
-		ThrowIfFailed(mGame->Direct3DDevice()->CreateBuffer(&constantBufferDesc, nullptr, mVSCBufferPerFrame.ReleaseAndGetAddressOf()), "ID3D11Device::CreateBuffer() failed.");
+		ThrowIfFailed(mGame->Direct3DDevice()->CreateBuffer(&constantBufferDesc, nullptr, mVSCBufferPerFrame.ReleaseAndGetAddressOf()),
+			"ID3D11Device::CreateBuffer() failed.");
 
 		constantBufferDesc.ByteWidth = sizeof(VSCBufferPerObject);
-		ThrowIfFailed(mGame->Direct3DDevice()->CreateBuffer(&constantBufferDesc, nullptr, mVSCBufferPerObject.ReleaseAndGetAddressOf()), "ID3D11Device::CreateBuffer() failed.");
+		ThrowIfFailed(mGame->Direct3DDevice()->CreateBuffer(&constantBufferDesc, nullptr, mVSCBufferPerObject.ReleaseAndGetAddressOf()),
+			"ID3D11Device::CreateBuffer() failed.");
 
 		constantBufferDesc.ByteWidth = sizeof(PSCBufferPerFrame);
-		ThrowIfFailed(mGame->Direct3DDevice()->CreateBuffer(&constantBufferDesc, nullptr, mPSCBufferPerFrame.ReleaseAndGetAddressOf()), "ID3D11Device::CreateBuffer() failed.");
+		ThrowIfFailed(mGame->Direct3DDevice()->CreateBuffer(&constantBufferDesc, nullptr, mPSCBufferPerFrame.ReleaseAndGetAddressOf()),
+			"ID3D11Device::CreateBuffer() failed.");
 
 		constantBufferDesc.ByteWidth = sizeof(PSCBufferPerObject);
-		ThrowIfFailed(mGame->Direct3DDevice()->CreateBuffer(&constantBufferDesc, nullptr, mPSCBufferPerObject.ReleaseAndGetAddressOf()), "ID3D11Device::CreateBuffer() failed.");
+		ThrowIfFailed(mGame->Direct3DDevice()->CreateBuffer(&constantBufferDesc, nullptr, mPSCBufferPerObject.ReleaseAndGetAddressOf()),
+			"ID3D11Device::CreateBuffer() failed.");
 
 		unordered_map<string, CelestialBody*> bodiesMap;
 		vector<string> parents;
@@ -97,7 +101,7 @@ namespace Rendering
 			}
 			CelestialBody body;
 			body.SetParams(section.mName, section.mTextureName, section.mMeanDistance, section.mRotationPeriod, section.mOrbitalPeriod,
-				section.mAxialTilt, section.mDiameter, section.mLit);
+				section.mAxialTilt, section.mDiameter, section.mReflectance, section.mIsLit);
 			mCelestialBodies.push_back(body);
 			bodiesMap.insert({section.mName, &mCelestialBodies.back()});
 			parents.push_back(section.mParent);
@@ -126,19 +130,14 @@ namespace Rendering
 		mKeyboard = reinterpret_cast<KeyboardComponent*>(mGame->Services().GetService(KeyboardComponent::TypeIdClass()));
 
 		// Setup the point light
-		mVSCBufferPerFrameData.LightPosition = mPointLight.Position();
-		mVSCBufferPerFrameData.LightRadius = mPointLight.Radius();
-		mPSCBufferPerFrameData.LightPosition = mPointLight.Position();
-		mPSCBufferPerFrameData.LightColor = ColorHelper::ToFloat3(mPointLight.Color(), true);
+		mVSCBufferPerFrameData.LightPosition = mSunLight.Position();
+		mVSCBufferPerFrameData.LightIntensity = mSunLight.Intensity();
+		mPSCBufferPerFrameData.LightPosition = mSunLight.Position();
+		mPSCBufferPerFrameData.LightColor = ColorHelper::ToFloat3(mSunLight.Color(), true);
 
 		// Update the vertex and pixel shader constant buffers
 		mGame->Direct3DDeviceContext()->UpdateSubresource(mVSCBufferPerFrame.Get(), 0, nullptr, &mVSCBufferPerFrameData, 0, 0);
 		mGame->Direct3DDeviceContext()->UpdateSubresource(mPSCBufferPerFrame.Get(), 0, nullptr, &mPSCBufferPerFrameData, 0, 0);
-
-		// Load a proxy model for the point light
-		mProxyModel = make_unique<ProxyModel>(*mGame, mCamera, "Content\\Models\\PointLightProxy.obj.bin", 0.5f);
-		mProxyModel->Initialize();
-		mProxyModel->SetPosition(mPointLight.Position());
 	}
 
 	void SolarSystemDemo::Update(const GameTime& gameTime)
@@ -150,17 +149,10 @@ namespace Rendering
 				ToggleAnimation();
 			}
 
-			bool updatePSCBufferPerFrame = UpdateAmbientLight(gameTime);
-			bool updateCBuffersPerFrame = UpdatePointLight(gameTime);
-
+			bool updateCBuffersPerFrame = UpdateCelestialLight(gameTime);
 			if (updateCBuffersPerFrame)
 			{
 				mGame->Direct3DDeviceContext()->UpdateSubresource(mVSCBufferPerFrame.Get(), 0, nullptr, &mVSCBufferPerFrameData, 0, 0);
-				mGame->Direct3DDeviceContext()->UpdateSubresource(mPSCBufferPerFrame.Get(), 0, nullptr, &mPSCBufferPerFrameData, 0, 0);
-			}
-			else if(updatePSCBufferPerFrame)
-			{
-				mGame->Direct3DDeviceContext()->UpdateSubresource(mPSCBufferPerFrame.Get(), 0, nullptr, &mPSCBufferPerFrameData, 0, 0);
 			}
 		}
 
@@ -171,7 +163,6 @@ namespace Rendering
 				body.Update(gameTime);
 			}
 		}
-		mProxyModel->Update(gameTime);
 	}
 
 	void SolarSystemDemo::Draw(const GameTime& gameTime)
@@ -203,7 +194,8 @@ namespace Rendering
 			ID3D11Buffer* VSConstantBuffers[] = {mVSCBufferPerFrame.Get(), mVSCBufferPerObject.Get()};
 			direct3DDeviceContext->VSSetConstantBuffers(0, ARRAYSIZE(VSConstantBuffers), VSConstantBuffers);
 
-			mPSCBufferPerObjectData.LightingCoefficient = body.Lit();
+			mPSCBufferPerObjectData.LightingCoefficient = body.IsLit();
+			mPSCBufferPerObjectData.Reflectance = body.Reflectance();
 			direct3DDeviceContext->UpdateSubresource(mPSCBufferPerObject.Get(), 0, nullptr, &mPSCBufferPerObjectData, 0, 0);
 			ID3D11Buffer* PSConstantBuffers[] = {mPSCBufferPerFrame.Get(), mPSCBufferPerObject.Get()};
 			direct3DDeviceContext->PSSetConstantBuffers(0, ARRAYSIZE(PSConstantBuffers), PSConstantBuffers);
@@ -215,18 +207,12 @@ namespace Rendering
 			direct3DDeviceContext->DrawIndexed(mIndexCount, 0, 0);
 		}
 
-		mProxyModel->Draw(gameTime);
-
 		// Draw help text
 		mRenderStateHelper.SaveAll();
 		mSpriteBatch->Begin();
 
 		wostringstream helpLabel;
-		helpLabel << "Ambient Intensity (+PgUp/-PgDn): " << mPSCBufferPerFrameData.AmbientColor.x << "\n";
-		helpLabel << L"Point Light Intensity (+Home/-End): " << mPSCBufferPerFrameData.LightColor.x << "\n";
-		helpLabel << L"Point Light Radius (+V/-B): " << mVSCBufferPerFrameData.LightRadius << "\n";
-		helpLabel << L"Move Point Light (8/2, 4/6, 3/9)" << "\n";
-		helpLabel << L"Toggle Grid (G)" << "\n";
+		helpLabel << L"Sun Light Intensity (+V/-B): " << mVSCBufferPerFrameData.LightIntensity << "\n";
 		helpLabel << L"Toggle Animation (Space)" << "\n";
 
 		mSpriteFont->DrawString(mSpriteBatch.get(), helpLabel.str().c_str(), mTextPosition);
@@ -265,82 +251,29 @@ namespace Rendering
 		mAnimationEnabled = !mAnimationEnabled;
 	}
 
-	bool SolarSystemDemo::UpdateAmbientLight(const GameTime& gameTime)
+	bool SolarSystemDemo::UpdateCelestialLight(const GameTime& gameTime)
 	{
-		static float ambientIntensity = mPSCBufferPerFrameData.AmbientColor.x;
-
-		assert(mKeyboard != nullptr);
-
-		if (mKeyboard->IsKeyDown(Keys::PageUp) && ambientIntensity < 1.0f)
-		{
-			ambientIntensity += gameTime.ElapsedGameTimeSeconds().count();
-			ambientIntensity = min(ambientIntensity, 1.0f);
-
-			mPSCBufferPerFrameData.AmbientColor = XMFLOAT3(ambientIntensity, ambientIntensity, ambientIntensity);
-			return true;
-		}
-		else if (mKeyboard->IsKeyDown(Keys::PageDown) && ambientIntensity > 0.0f)
-		{
-			ambientIntensity -= gameTime.ElapsedGameTimeSeconds().count();
-			ambientIntensity = max(ambientIntensity, 0.0f);
-
-			mPSCBufferPerFrameData.AmbientColor = XMFLOAT3(ambientIntensity, ambientIntensity, ambientIntensity);
-			return true;
-		}
-		return false;
-	}
-
-	bool SolarSystemDemo::UpdatePointLight(const GameTime& gameTime)
-	{
-		static float lightIntensity = mPSCBufferPerFrameData.LightColor.x;
-
-		assert(mKeyboard != nullptr);
-
-		float elapsedTime = gameTime.ElapsedGameTimeSeconds().count();
 		bool updateCBuffer = false;
-
-		// Update point light intensity
-		if (mKeyboard->IsKeyDown(Keys::Home) && lightIntensity < 1.0f)
-		{
-			lightIntensity += elapsedTime;
-			lightIntensity = min(lightIntensity, 1.0f);
-
-			mPSCBufferPerFrameData.LightColor = XMFLOAT3(lightIntensity, lightIntensity, lightIntensity);
-			mPointLight.SetColor(mPSCBufferPerFrameData.LightColor.x, mPSCBufferPerFrameData.LightColor.y, mPSCBufferPerFrameData.LightColor.z, 1.0f);
-			updateCBuffer = true;
-		}
-		else if (mKeyboard->IsKeyDown(Keys::End) && lightIntensity > 0.0f)
-		{
-			lightIntensity -= elapsedTime;
-			lightIntensity = max(lightIntensity, 0.0f);
-
-			mPSCBufferPerFrameData.LightColor = XMFLOAT3(lightIntensity, lightIntensity, lightIntensity);
-			mPointLight.SetColor(mPSCBufferPerFrameData.LightColor.x, mPSCBufferPerFrameData.LightColor.y, mPSCBufferPerFrameData.LightColor.z, 1.0f);
-			updateCBuffer = true;
-		}
+		float elapsedTime = gameTime.ElapsedGameTimeSeconds().count();
 
 		// Update the light's radius
 		if (mKeyboard->IsKeyDown(Keys::V))
 		{
-			float radius = mPointLight.Radius() + LightModulationRate * elapsedTime;
-			mPointLight.SetRadius(radius);
-			mVSCBufferPerFrameData.LightRadius = mPointLight.Radius();
+			float radius = mSunLight.Intensity() + LightModulationRate * elapsedTime;
+			mSunLight.SetIntensity(radius);
+			mVSCBufferPerFrameData.LightIntensity = mSunLight.Intensity();
 			updateCBuffer = true;
 		}
 
 		if (mKeyboard->IsKeyDown(Keys::B))
 		{
-			float radius = mPointLight.Radius() - LightModulationRate * elapsedTime;
+			float radius = mSunLight.Intensity() - LightModulationRate * elapsedTime;
 			radius = max(radius, 0.0f);
-			mPointLight.SetRadius(radius);
-			mVSCBufferPerFrameData.LightRadius = mPointLight.Radius();
+			mSunLight.SetIntensity(radius);
+			mVSCBufferPerFrameData.LightIntensity = mSunLight.Intensity();
 			updateCBuffer = true;
 		}
 
-		if (updateCBuffer)
-		{
-			return true;
-		}
-		return false;
+		return updateCBuffer;
 	}
 }

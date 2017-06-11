@@ -1,13 +1,13 @@
 cbuffer CBufferPerFrame
 {
-	float3 AmbientColor;
 	float3 LightPosition;
 	float3 LightColor;
 };
 
 cbuffer CBufferPerObject
 {
-	float LightingCoefficient;
+	float IsLit;
+	float Reflectance;
 }
 
 Texture2D ColorMap;
@@ -30,10 +30,8 @@ float4 main(VS_OUTPUT IN) : SV_TARGET
 	float n_dot_l = dot(normal, lightDirection);
 
 	float4 color = ColorMap.Sample(TextureSampler, IN.TextureCoordinate);
+	float3 diffuse = color.rgb * n_dot_l * LightColor * IN.Attenuation * IsLit * Reflectance;
+	float3 textureColor = color.rgb * (1 - IsLit);
 
-	float3 ambient = color.rgb * AmbientColor;
-	float3 diffuse = color.rgb * n_dot_l * LightColor * IN.Attenuation;
-	float3 textureColor = color.rgb * (1 - LightingCoefficient);
-
-	return float4(saturate(ambient + diffuse + textureColor), color.a);
+	return float4(saturate(diffuse + textureColor), color.a);
 }

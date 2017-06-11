@@ -15,7 +15,8 @@ namespace Rendering
 		float mOrbitalPeriod;
 		float mAxialTilt;
 		float mDiameter;
-		float mLit;
+		float mReflectance;
+		float mIsLit;
 		std::string mParent;
 	};
 

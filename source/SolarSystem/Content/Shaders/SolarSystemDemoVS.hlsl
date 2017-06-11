@@ -1,7 +1,7 @@
 cbuffer CBufferPerFrame
 {
 	float3 LightPosition;
-	float LightRadius;
+	float LightIntensity;
 }
 
 cbuffer CBufferPerObject
@@ -36,7 +36,7 @@ VS_OUTPUT main(VS_INPUT IN)
 	OUT.Normal = normalize(mul(float4(IN.Normal, 0), World).xyz);
 
 	float3 lightDirection = LightPosition - OUT.WorldPosition;
-	OUT.Attenuation = saturate(1.0f - (length(lightDirection) / LightRadius));
-
+	float lightDistance = length(lightDirection);
+	OUT.Attenuation = saturate(LightIntensity/(lightDistance*lightDistance));
 	return OUT;
 }

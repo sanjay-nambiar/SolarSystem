@@ -77,7 +77,8 @@ namespace Rendering
 					std::stof(section.at("OrbitalPeriod")),
 					std::stof(section.at("AxialTilt")),
 					std::stof(section.at("Diameter")),
-					std::stof(section.at("Lit")),
+					std::stof(section.at("Albeido")), // reflectance
+					std::stof(section.at("IsLit")),
 					section.at("Parent")
 				};
 			}
@@ -91,7 +92,8 @@ namespace Rendering
 					std::stof(section.at("OrbitalPeriod")),
 					std::stof(section.at("AxialTilt")),
 					std::stof(section.at("Diameter")),
-					std::stof(section.at("Lit")),
+					std::stof(section.at("Albeido")),	// reflectance
+					std::stof(section.at("IsLit")),
 					section.at("Parent")
 				}});
 			}

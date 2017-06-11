@@ -62,6 +62,7 @@
 #include "DirectionalLight.h"
 #include "PointLight.h"
 #include "SpotLight.h"
+#include "CeletialLight.h"
 #include "ColorHelper.h"
 #include "Utility.h"
 #include "VertexDeclarations.h"
