@@ -18,6 +18,7 @@ namespace Rendering
 		const DirectX::XMFLOAT4X4& WorldTransform() const;
 		CelestialBody* Parent() const;
 
+		void Initialize() override;
 		void Update(const Library::GameTime& gameTime) override;
 
 		static void SetConstantParams(float meanDistance, float rotationPeriod, float orbitalPeriod, float diameter);

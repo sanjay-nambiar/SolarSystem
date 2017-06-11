@@ -31,9 +31,7 @@ namespace Rendering
 		mOrbitalAngle = 0.0f;
 
 		mTranslation = DirectX::XMMatrixTranslation(sMeanDistance * mData.mMeanDistance, 0, 0);
-
-		GameTime gameTime;
-		Update(gameTime);
+		Initialize();
 	}
 
 	void CelestialBody::Adopt(CelestialBody& body)
@@ -44,6 +42,7 @@ namespace Rendering
 		// calculate distance from the outer edge of the parent instead of origin
 		float childDistanceFromOrigin = (sMeanDistance * body.mData.mMeanDistance) + (mData.mDiameter / 2) * 20;
 		body.mTranslation = DirectX::XMMatrixTranslation(childDistanceFromOrigin, 0, 0);
+		body.Initialize();
 	}
 
 	const CelestialBodyData& CelestialBody::Data() const
@@ -64,6 +63,18 @@ namespace Rendering
 	CelestialBody* CelestialBody::Parent() const
 	{
 		return mParent;
+	}
+
+	void CelestialBody::Initialize()
+	{
+		GameComponent::Initialize();
+
+		float diameter = sDiameter * mData.mDiameter;
+		XMMATRIX transform = XMMatrixScaling(diameter, diameter, diameter);
+		transform = XMMatrixMultiply(transform, XMMatrixRotationY(mRotationAngle));
+		transform = XMMatrixMultiply(transform, XMMatrixRotationZ(XMConvertToRadians(mData.mAxialTilt)));
+		transform = XMMatrixMultiply(transform, mTranslation);
+		XMStoreFloat4x4(&mWorldTransform, transform);
 	}
 
 	void CelestialBody::Update(const GameTime& gameTime)
