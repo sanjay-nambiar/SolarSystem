@@ -7,11 +7,12 @@
 #include <DirectXColors.h>
 #include "ConfigData.h"
 #include "CelestialBody.h"
+#include <unordered_map>
 
 namespace Library
 {
 	class ProxyModel;
-	class KeyboardComponent;	
+	class KeyboardComponent;
 }
 
 namespace DirectX
@@ -106,6 +107,7 @@ namespace Rendering
 
 		ConfigData mConfigData;
 		std::vector<CelestialBody> mCelestialBodies;
+		CelestialBody* mRootBody;
 		std::unordered_map<std::string, Microsoft::WRL::ComPtr<ID3D11ShaderResourceView>> mColorTextures;
 
 		VSCBufferPerFrame mVSCBufferPerFrameData;

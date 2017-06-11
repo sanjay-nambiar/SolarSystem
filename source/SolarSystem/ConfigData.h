@@ -1,12 +1,14 @@
 #pragma once
 
 #include <regex>
+#include <map>
 #include <unordered_map>
 
 namespace Rendering
 {
 	struct SectionData
 	{
+		std::string mName;
 		std::string mTextureName;
 		float mMeanDistance;
 		float mRotationPeriod;
@@ -14,7 +16,7 @@ namespace Rendering
 		float mAxialTilt;
 		float mDiameter;
 		float mLit;
-		std::string mOrbitCenter;
+		std::string mParent;
 	};
 
 	class ConfigData

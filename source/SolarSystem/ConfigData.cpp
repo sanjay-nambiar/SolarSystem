@@ -70,6 +70,7 @@ namespace Rendering
 			if (sectionEntry.first == ConstantsSection)
 			{
 				mConstantsData = {
+					sectionEntry.first,
 					section.at("Texture"),
 					std::stof(section.at("MeanDistance")),
 					std::stof(section.at("RotationPeriod")),
@@ -77,12 +78,13 @@ namespace Rendering
 					std::stof(section.at("AxialTilt")),
 					std::stof(section.at("Diameter")),
 					std::stof(section.at("Lit")),
-					section.at("OrbitCenter")
+					section.at("Parent")
 				};
 			}
 			else
 			{
 				mConfigData.insert({sectionEntry.first,{
+					sectionEntry.first,
 					section.at("Texture"),
 					std::stof(section.at("MeanDistance")),
 					std::stof(section.at("RotationPeriod")),
@@ -90,7 +92,7 @@ namespace Rendering
 					std::stof(section.at("AxialTilt")),
 					std::stof(section.at("Diameter")),
 					std::stof(section.at("Lit")),
-					section.at("OrbitCenter")
+					section.at("Parent")
 				}});
 			}
 		}

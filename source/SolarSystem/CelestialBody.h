@@ -10,15 +10,16 @@ namespace Rendering
 		CelestialBody();
 		virtual ~CelestialBody() = default;
 
-		void SetParams(const std::string& textureName, float meanDistance, float rotationPeriod, float orbitalPeriod,
+		void SetParams(const std::string& name, const std::string& textureName, float meanDistance, float rotationPeriod, float orbitalPeriod,
 			float axialTilt, float diameter, float lit);
 		void Adopt(CelestialBody& body);
 
-		std::uint64_t ID() const;
+		std::string Name() const;
 		const DirectX::XMFLOAT4& Position() const;
 		const DirectX::XMFLOAT4X4& WorldTransform() const;
 		const std::string& TextureName() const;
 		float Lit() const;
+		CelestialBody* Parent() const;
 
 		void Update(const Library::GameTime& gameTime) override;
 
@@ -27,9 +28,10 @@ namespace Rendering
 		DirectX::XMFLOAT4X4 mWorldTransform;
 		DirectX::XMFLOAT4 mPosition;
 
-		std::unordered_map<std::uint64_t, std::shared_ptr<CelestialBody>> mChildBodies;
-		std::shared_ptr<CelestialBody> mParent;
+		std::vector<CelestialBody*> mChildBodies;
+		CelestialBody* mParent;
 
+		std::string mName;
 		std::string mTextureName;
 		float mMeanDistance;
 		float mRotationPeriod;

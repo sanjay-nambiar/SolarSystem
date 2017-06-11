@@ -12,7 +12,7 @@ namespace Rendering
 	const float SolarSystemDemo::LightModulationRate = UCHAR_MAX;
 
 	SolarSystemDemo::SolarSystemDemo(Game & game, const shared_ptr<Camera>& camera) :
-		DrawableGameComponent(game, camera), mPointLight(game, XMFLOAT3(5.0f, 0.0f, 10.0f), 1000.0f),
+		DrawableGameComponent(game, camera), mRootBody(nullptr), mPointLight(game, XMFLOAT3(0.0f, 0.0f, 0.0f), 20000.0f),
 		mRenderStateHelper(game), mKeyboard(nullptr), mIndexCount(0), mTextPosition(0.0f, 40.0f), mAnimationEnabled(false)
 	{
 	}
@@ -80,6 +80,9 @@ namespace Rendering
 		constantBufferDesc.ByteWidth = sizeof(PSCBufferPerObject);
 		ThrowIfFailed(mGame->Direct3DDevice()->CreateBuffer(&constantBufferDesc, nullptr, mPSCBufferPerObject.ReleaseAndGetAddressOf()), "ID3D11Device::CreateBuffer() failed.");
 
+		unordered_map<string, CelestialBody*> bodiesMap;
+		vector<string> parents;
+		mCelestialBodies.reserve(mConfigData.GetAllData().size());
 		// Load textures for the color and specular maps
 		for (const auto& sectionEntry : mConfigData.GetAllData())
 		{
@@ -93,9 +96,26 @@ namespace Rendering
 				mColorTextures.insert({section.mTextureName, textureView});
 			}
 			CelestialBody body;
-			body.SetParams(section.mTextureName, section.mMeanDistance, section.mRotationPeriod, section.mOrbitalPeriod,
+			body.SetParams(section.mName, section.mTextureName, section.mMeanDistance, section.mRotationPeriod, section.mOrbitalPeriod,
 				section.mAxialTilt, section.mDiameter, section.mLit);
 			mCelestialBodies.push_back(body);
+			bodiesMap.insert({section.mName, &mCelestialBodies.back()});
+			parents.push_back(section.mParent);
+		}
+
+		uint32_t index = 0;
+		for (auto& body : mCelestialBodies)
+		{
+			if (parents[index] == "")
+			{
+				mRootBody = &body;
+			}
+			else
+			{
+				CelestialBody* parent = bodiesMap.at(parents[index]);
+				parent->Adopt(body);
+			}
+			++index;
 		}
 
 		// Create text rendering helpers
@@ -208,7 +228,7 @@ namespace Rendering
 		helpLabel << L"Move Point Light (8/2, 4/6, 3/9)" << "\n";
 		helpLabel << L"Toggle Grid (G)" << "\n";
 		helpLabel << L"Toggle Animation (Space)" << "\n";
-	
+
 		mSpriteFont->DrawString(mSpriteBatch.get(), helpLabel.str().c_str(), mTextPosition);
 		mSpriteBatch->End();
 		mRenderStateHelper.RestoreAll();
