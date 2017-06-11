@@ -7,6 +7,10 @@ using namespace Library;
 namespace Rendering
 {
 	const XMVECTORF32 RenderingGame::BackgroundColor = Colors::Black;
+	const XMFLOAT3 RenderingGame::CameraStart = XMFLOAT3(0.0f, 2.5f, 1000.0f);
+	const float RenderingGame::MinCameraMovementRate = 10;
+	const float RenderingGame::MaxCameraMovementRate = 1000;
+	const float RenderingGame::MovementRateDelta = 10;
 
 	RenderingGame::RenderingGame(std::function<void*()> getWindowCallback, std::function<void(SIZE&)> getRenderTargetSizeCallback) :
 		Game(getWindowCallback, getRenderTargetSizeCallback, false), mRenderStateHelper(*this)
@@ -42,7 +46,7 @@ namespace Rendering
 		mFpsComponent = make_shared<FpsComponent>(*this);
 		mFpsComponent->Initialize();
 
-		mCamera->SetPosition(0.0f, 2.5f, 500.0f);
+		mCamera->SetPosition(CameraStart);
 	}
 
 	void RenderingGame::Update(const GameTime &gameTime)
@@ -52,6 +56,21 @@ namespace Rendering
 		if (mKeyboard->WasKeyPressedThisFrame(Keys::Escape) || mGamePad->WasButtonPressedThisFrame(GamePadButtons::Back))
 		{
 			Exit();
+		}
+
+		if (mKeyboard->WasKeyDown(Keys::OemPlus))
+		{
+			if (mCamera->MovementRate() < MaxCameraMovementRate)
+			{
+				mCamera->MovementRate() += MovementRateDelta;
+			}
+		}
+		if (mKeyboard->WasKeyDown(Keys::OemMinus))
+		{
+			if (mCamera->MovementRate() > MinCameraMovementRate)
+			{
+				mCamera->MovementRate() -= MovementRateDelta;
+			}
 		}
 
 		Game::Update(gameTime);

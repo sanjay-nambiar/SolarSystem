@@ -93,7 +93,6 @@ namespace Rendering
 		}
 
 		float diameter = sDiameter * mData.mDiameter;
-
 		XMMATRIX transform = XMMatrixScaling(diameter, diameter, diameter);
 		transform = XMMatrixMultiply(transform, XMMatrixRotationY(mRotationAngle));
 		transform = XMMatrixMultiply(transform, XMMatrixRotationZ(XMConvertToRadians(mData.mAxialTilt)));

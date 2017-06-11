@@ -60,7 +60,7 @@ namespace Library
 		MouseComponent* mMouse;
 		float mMouseSensitivity;
 		float mRotationRate;
-        float mMovementRate;		
+		float mMovementRate;
     };
 }
 

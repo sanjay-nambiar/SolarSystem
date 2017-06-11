@@ -33,13 +33,17 @@ namespace Rendering
 
 	private:
 		static const DirectX::XMVECTORF32 BackgroundColor;
+		static const DirectX::XMFLOAT3 CameraStart;
+		static const float MinCameraMovementRate;
+		static const float MaxCameraMovementRate;
+		static const float MovementRateDelta;
 
 		Library::RenderStateHelper mRenderStateHelper;
 		std::shared_ptr<Library::KeyboardComponent> mKeyboard;
 		std::shared_ptr<Library::MouseComponent> mMouse;
 		std::shared_ptr<Library::GamePadComponent> mGamePad;
 		std::shared_ptr<Library::FpsComponent> mFpsComponent;
-		std::shared_ptr<Library::Camera> mCamera;
+		std::shared_ptr<Library::FirstPersonCamera> mCamera;
 		std::shared_ptr<SolarSystemDemo> mSolarSystemDemo;
 	};
 }

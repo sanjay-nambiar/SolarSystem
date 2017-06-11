@@ -213,6 +213,7 @@ namespace Rendering
 
 		wostringstream helpLabel;
 		helpLabel << L"Sun Light Intensity (+V/-B): " << mVSCBufferPerFrameData.LightIntensity << "\n";
+		helpLabel << L"Camera Movement Speed (+/-): " << static_cast<FirstPersonCamera*>(mCamera.get())->MovementRate() << "\n";
 		helpLabel << L"Toggle Animation (Space)" << "\n";
 
 		mSpriteFont->DrawString(mSpriteBatch.get(), helpLabel.str().c_str(), mTextPosition);
