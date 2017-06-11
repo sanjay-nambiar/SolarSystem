@@ -29,8 +29,7 @@ namespace Rendering
 		float netOrbitalPeriod = (sOrbitalPeriod * mData.mOrbitalPeriod);
 		mOrbitalRate = (netOrbitalPeriod == 0) ? 0 : (XM_2PI / netOrbitalPeriod);
 		mOrbitalAngle = 0.0f;
-
-		mTranslation = DirectX::XMMatrixTranslation(sMeanDistance * mData.mMeanDistance, 0, 0);
+		XMStoreFloat4x4(&mTranslation, XMMatrixTranslation(sMeanDistance * mData.mMeanDistance, 0, 0));
 		Initialize();
 	}
 
@@ -41,7 +40,7 @@ namespace Rendering
 
 		// calculate distance from the outer edge of the parent instead of origin
 		float childDistanceFromOrigin = (sMeanDistance * body.mData.mMeanDistance) + (mData.mDiameter / 2) * 20;
-		body.mTranslation = DirectX::XMMatrixTranslation(childDistanceFromOrigin, 0, 0);
+		XMStoreFloat4x4(&body.mTranslation, XMMatrixTranslation(childDistanceFromOrigin, 0, 0));
 		body.Initialize();
 	}
 
@@ -50,7 +49,7 @@ namespace Rendering
 		return mData;
 	}
 
-	const DirectX::XMFLOAT4& CelestialBody::Position() const
+	const XMFLOAT4& CelestialBody::Position() const
 	{
 		return mPosition;
 	}
@@ -73,7 +72,7 @@ namespace Rendering
 		XMMATRIX transform = XMMatrixScaling(diameter, diameter, diameter);
 		transform = XMMatrixMultiply(transform, XMMatrixRotationY(mRotationAngle));
 		transform = XMMatrixMultiply(transform, XMMatrixRotationZ(XMConvertToRadians(mData.mAxialTilt)));
-		transform = XMMatrixMultiply(transform, mTranslation);
+		transform = XMMatrixMultiply(transform, XMLoadFloat4x4(&mTranslation));
 		XMStoreFloat4x4(&mWorldTransform, transform);
 	}
 
@@ -96,7 +95,7 @@ namespace Rendering
 		XMMATRIX transform = XMMatrixScaling(diameter, diameter, diameter);
 		transform = XMMatrixMultiply(transform, XMMatrixRotationY(mRotationAngle));
 		transform = XMMatrixMultiply(transform, XMMatrixRotationZ(XMConvertToRadians(mData.mAxialTilt)));
-		transform = XMMatrixMultiply(transform, mTranslation);
+		transform = XMMatrixMultiply(transform, XMLoadFloat4x4(&mTranslation));
 		transform = XMMatrixMultiply(transform, XMMatrixRotationY(mOrbitalAngle));
 		XMStoreFloat4x4(&mWorldTransform, transform);
 	}

@@ -34,7 +34,7 @@ namespace Rendering
 		float mOrbitalRate;
 		float mRotationAngle;
 		float mOrbitalAngle;
-		DirectX::XMMATRIX mTranslation;
+		DirectX::XMFLOAT4X4 mTranslation;
 
 		const std::uint64_t mID;
 
