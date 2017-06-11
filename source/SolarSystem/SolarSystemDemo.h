@@ -98,6 +98,7 @@ namespace Rendering
 		bool UpdateCelestialLight(const Library::GameTime& gameTime);
 
 		static const float LightModulationRate;
+		static const float SunLightDefaultIntensity;
 
 		ConfigData mConfigData;
 		std::vector<CelestialBody> mCelestialBodies;
@@ -108,7 +109,7 @@ namespace Rendering
 		VSCBufferPerObject mVSCBufferPerObjectData;
 		PSCBufferPerFrame mPSCBufferPerFrameData;
 		PSCBufferPerObject mPSCBufferPerObjectData;
-		Rendering::CelestialLight mSunLight;
+		CelestialLight mSunLight;
 		Library::RenderStateHelper mRenderStateHelper;
 		Microsoft::WRL::ComPtr<ID3D11VertexShader> mVertexShader;
 		Microsoft::WRL::ComPtr<ID3D11PixelShader> mPixelShader;

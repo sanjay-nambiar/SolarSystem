@@ -59,6 +59,11 @@ namespace Rendering
 		return mWorldTransform;
 	}
 
+	const DirectX::XMFLOAT4X4& CelestialBody::WorldTranslation() const
+	{
+		return mTranslation;
+	}
+
 	CelestialBody* CelestialBody::Parent() const
 	{
 		return mParent;

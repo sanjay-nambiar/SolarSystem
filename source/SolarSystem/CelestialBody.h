@@ -16,6 +16,7 @@ namespace Rendering
 		const CelestialBodyData& Data() const;
 		const DirectX::XMFLOAT4& Position() const;
 		const DirectX::XMFLOAT4X4& WorldTransform() const;
+		const DirectX::XMFLOAT4X4& WorldTranslation() const;
 		CelestialBody* Parent() const;
 
 		void Initialize() override;

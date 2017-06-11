@@ -10,9 +10,10 @@ namespace Rendering
 	RTTI_DEFINITIONS(SolarSystemDemo)
 
 	const float SolarSystemDemo::LightModulationRate = 10000000;
+	const float SolarSystemDemo::SunLightDefaultIntensity = 63300000.0f;
 
 	SolarSystemDemo::SolarSystemDemo(Game & game, const shared_ptr<Camera>& camera) :
-		DrawableGameComponent(game, camera), mRootBody(nullptr), mSunLight(game, XMFLOAT3(0.0f, 0.0f, 0.0f), 63300000.0f),
+		DrawableGameComponent(game, camera), mRootBody(nullptr), mSunLight(game, XMFLOAT3(0.0f, 0.0f, 0.0f), SunLightDefaultIntensity),
 		mRenderStateHelper(game), mKeyboard(nullptr), mIndexCount(0), mTextPosition(0.0f, 40.0f), mAnimationEnabled(false)
 	{
 	}
