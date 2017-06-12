@@ -37,6 +37,6 @@ VS_OUTPUT main(VS_INPUT IN)
 
 	float3 lightDirection = LightPosition - OUT.WorldPosition;
 	float lightDistance = length(lightDirection);
-	OUT.Attenuation = saturate(LightIntensity/(lightDistance*lightDistance));
+	OUT.Attenuation = saturate(LightIntensity / lightDistance);
 	return OUT;
 }

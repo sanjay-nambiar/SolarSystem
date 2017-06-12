@@ -10,7 +10,7 @@ namespace Rendering
 	RTTI_DEFINITIONS(SolarSystemDemo)
 
 	const float SolarSystemDemo::LightModulationRate = 10000000;
-	const float SolarSystemDemo::SunLightDefaultIntensity = 93300000.0f;
+	const float SolarSystemDemo::SunLightDefaultIntensity = 93300000.0f * 100000;
 
 	SolarSystemDemo::SolarSystemDemo(Game & game, const shared_ptr<Camera>& camera) :
 		DrawableGameComponent(game, camera), mRootBody(nullptr), mSunLight(game, XMFLOAT3(0.0f, 0.0f, 0.0f), SunLightDefaultIntensity),
@@ -234,6 +234,7 @@ namespace Rendering
 		helpLabel << L"Camera Movement Speed (+/-): " << static_cast<FirstPersonCamera*>(mCamera.get())->MovementRate() << "\n";
 		helpLabel << L"Toggle Animation (Space)" << "\n";
 		helpLabel << L"Toggle Orbits (O)" << "\n";
+		helpLabel << L"Toggle Skybox (Y)" << "\n";
 		helpLabel << L"Exit (Esc)" << "\n";
 
 		mSpriteFont->DrawString(mSpriteBatch.get(), helpLabel.str().c_str(), mTextPosition);

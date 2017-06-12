@@ -38,7 +38,7 @@ namespace Rendering
 		mComponents.push_back(mCamera);
 		mServices.AddService(Camera::TypeIdClass(), mCamera.get());
 
-		mSkybox = make_shared<Skybox>(*this, mCamera, L"Content\\Textures\\Skybox.dds", 500.0f);
+		mSkybox = make_shared<Skybox>(*this, mCamera, L"Content\\Textures\\Skybox.dds", 10000.0f);
 		mComponents.push_back(mSkybox);
 
 		mSolarSystemDemo = make_shared<SolarSystemDemo>(*this, mCamera);
@@ -74,6 +74,11 @@ namespace Rendering
 			{
 				mCamera->MovementRate() -= MovementRateDelta;
 			}
+		}
+
+		if (mKeyboard->WasKeyDown(Keys::Y))
+		{
+			mSkybox->SetVisible(!mSkybox->Visible());
 		}
 
 		Game::Update(gameTime);
