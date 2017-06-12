@@ -35,12 +35,12 @@ namespace Rendering
 		mServices.AddService(GamePadComponent::TypeIdClass(), mGamePad.get());
 
 		mCamera = make_shared<FirstPersonCamera>(*this, PerspectiveCamera::DefaultFieldOfView, 16.0f/9.0f, Camera::DefaultNearPlaneDistance,
-			Camera::DefaultFarPlaneDistance * 1000);
+			Camera::DefaultFarPlaneDistance * 10000000);
 		mComponents.push_back(mCamera);
 		mServices.AddService(Camera::TypeIdClass(), mCamera.get());
 
 		mSkybox = make_shared<Skybox>(*this, mCamera, L"Content\\Textures\\Skybox.dds", 500.0f);
-		mComponents.push_back(mSkybox);
+		//mComponents.push_back(mSkybox);
 
 		mSolarSystemDemo = make_shared<SolarSystemDemo>(*this, mCamera);
 		mComponents.push_back(mSolarSystemDemo);

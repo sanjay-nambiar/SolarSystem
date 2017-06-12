@@ -110,7 +110,18 @@ namespace Rendering
 		transform = XMMatrixMultiply(transform, XMMatrixRotationZ(XMConvertToRadians(mData.mAxialTilt)));
 		transform = XMMatrixMultiply(transform, XMLoadFloat4x4(&mTranslation));
 		transform = XMMatrixMultiply(transform, XMMatrixRotationY(mOrbitalAngle));
+		if (mParent != nullptr)
+		{
+			XMFLOAT4 origin(0.0f, 0.0f, 0.0f, 1.0f);
+			XMVECTOR position = XMLoadFloat4(&origin);
+			XMVECTOR transformed = XMVector4Transform(position, XMLoadFloat4x4(&mParent->WorldTransform()));
+			transform = XMMatrixMultiply(transform, XMMatrixTranslationFromVector(transformed));
+		}
 		XMStoreFloat4x4(&mWorldTransform, transform);
+		if (mOrbit)
+		{
+			mOrbit->Update(gameTime);
+		}
 	}
 
 	std::shared_ptr<Orbit>& CelestialBody::GetOrbit()
@@ -128,10 +139,10 @@ namespace Rendering
 
 	void CelestialBody::InitializeOrbit()
 	{
-		mOrbit = std::make_shared<Orbit>(*mGame, mCamera);
+		mOrbit = std::make_shared<Orbit>(*mGame, mCamera, *this);
 		mOrbit->Initialize();
 		XMFLOAT3 translation(mTranslation._41, mTranslation._42, mTranslation._43);
 		float radius = XMVectorGetByIndex(XMVector3Length(XMLoadFloat3(&translation)), 0);
-		mOrbit->SetParams(radius, 10, mTranslation, XMFLOAT4(0.5f, 0.5f, 0.5f, 1.0f));
+		mOrbit->SetParams(radius, 10, XMFLOAT4(0.5f, 0.5f, 0.5f, 1.0f));
 	}
 }

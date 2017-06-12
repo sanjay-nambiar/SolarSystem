@@ -7,19 +7,23 @@
 
 namespace Rendering
 {
+	class CelestialBody;
+
 	class Orbit final : public Library::DrawableGameComponent
 	{
 		RTTI_DECLARATIONS(Orbit, DrawableGameComponent)
 
 	public:
-		Orbit(Library::Game& game, const std::shared_ptr<Library::Camera>& camera);
+		Orbit(Library::Game& game, const std::shared_ptr<Library::Camera>& camera, CelestialBody& parentBody);
 
 		Orbit() = delete;
 		Orbit(const Orbit&) = delete;
 		Orbit& operator=(const Orbit&) = delete;
 
 		void Initialize() override;
-		void SetParams(float radius, float vertexPerUnit, const DirectX::XMFLOAT4X4& transform, const DirectX::XMFLOAT4& color);
+		void SetParams(float radius, float vertexPerUnit, const DirectX::XMFLOAT4& color);
+		
+		void Update(const Library::GameTime& gameTime) override;
 		void Draw(const Library::GameTime& gameTime) override;
 	private:
 		struct VertexCBufferPerObject
@@ -39,10 +43,9 @@ namespace Rendering
 		Microsoft::WRL::ComPtr<ID3D11Buffer> mVertexCBufferPerObject;
 		VertexCBufferPerObject mVertexCBufferPerObjectData;
 
+		CelestialBody& mParentBody;
 		DirectX::XMFLOAT4 mColor;
 		float mRadius;
-		DirectX::XMFLOAT4X4 mTransform;
-
 		DirectX::XMFLOAT4X4 mWorldMatrix;
 		uint32_t mVertexCount;
 	};

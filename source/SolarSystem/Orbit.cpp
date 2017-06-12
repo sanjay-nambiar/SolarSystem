@@ -9,10 +9,10 @@ namespace Rendering
 
 	const XMFLOAT4 Orbit::DefaultColor = XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f);
 
-	Orbit::Orbit(Game& game, const std::shared_ptr<Camera>& camera) :
+	Orbit::Orbit(Game& game, const std::shared_ptr<Camera>& camera, CelestialBody& parentBody) :
 		DrawableGameComponent(game, camera), mVertexShader(nullptr), mPixelShader(nullptr), mInputLayout(nullptr),
 		mVertexBuffer(nullptr), mVertexCBufferPerObject(nullptr), mVertexCBufferPerObjectData(), mColor(DefaultColor),
-		mRadius(0), mTransform(MatrixHelper::Identity), mWorldMatrix(MatrixHelper::Identity), mVertexCount(0)
+		mRadius(0), mWorldMatrix(MatrixHelper::Identity), mVertexCount(0), mParentBody(parentBody)
 	{
 	}
 
@@ -48,11 +48,24 @@ namespace Rendering
 			"ID3D11Device::CreateBuffer() failed.");
 	}
 
-	void Orbit::SetParams(float radius, float vertexPerUnit, const DirectX::XMFLOAT4X4& transform, const DirectX::XMFLOAT4& color)
+	void Orbit::Update(const GameTime&)
+	{
+		if (mParentBody.Parent() != nullptr)
+		{
+			CelestialBody& body = *mParentBody.Parent();
+			XMFLOAT4 origin(0.0f, 0.0f, 0.0f, 1.0f);
+			XMVECTOR position = XMLoadFloat4(&origin);
+			XMVECTOR transformed = XMVector4Transform(position, XMLoadFloat4x4(&body.WorldTransform()));
+			mWorldMatrix = MatrixHelper::Identity;
+			XMStoreFloat4x4(&mWorldMatrix, XMMatrixMultiply(XMLoadFloat4x4(&mWorldMatrix), XMMatrixTranslationFromVector(transformed)));
+		}
+	}
+
+	void Orbit::SetParams(float radius, float vertexPerUnit, const DirectX::XMFLOAT4& color)
 	{
 		mRadius = radius;
-		mTransform = transform;
 		mColor = color;
+		Update(GameTime());
 
 		mVertexBuffer.Reset();
 		mVertexCount = static_cast<std::uint32_t>(ceil((2 * XM_PI * mRadius) * vertexPerUnit));
