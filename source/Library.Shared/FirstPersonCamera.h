@@ -42,7 +42,7 @@ namespace Library
         static const float DefaultMovementRate;
 
 	private:
-		void UpdatePosition(const DirectX::XMFLOAT2& movementAmount, const DirectX::XMFLOAT2& rotationAmount, const GameTime& gameTime);
+		void UpdatePosition(const DirectX::XMFLOAT3& movementAmount, const DirectX::XMFLOAT2& rotationAmount, const GameTime& gameTime);
 		inline bool IsGamePadConnected(DirectX::GamePad::State& gamePadState)
 		{
 			if (mGamePad != nullptr)

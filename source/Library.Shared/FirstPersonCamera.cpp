@@ -4,25 +4,25 @@ using namespace DirectX;
 
 namespace Library
 {
-    RTTI_DEFINITIONS(FirstPersonCamera)
+	RTTI_DEFINITIONS(FirstPersonCamera)
 
 	const float FirstPersonCamera::DefaultMouseSensitivity = 0.1f;
-    const float FirstPersonCamera::DefaultRotationRate = XMConvertToRadians(100.0f);
-    const float FirstPersonCamera::DefaultMovementRate = 100.0f;
+	const float FirstPersonCamera::DefaultRotationRate = XMConvertToRadians(100.0f);
+	const float FirstPersonCamera::DefaultMovementRate = 100.0f;
 
-    FirstPersonCamera::FirstPersonCamera(Game& game) :
+	FirstPersonCamera::FirstPersonCamera(Game& game) :
 		PerspectiveCamera(game),
 		mGamePad(nullptr), mKeyboard(nullptr), mMouse(nullptr), mMouseSensitivity(DefaultMouseSensitivity),
 		mRotationRate(DefaultRotationRate), mMovementRate(DefaultMovementRate)
-    {
-    }
+	{
+	}
 
-    FirstPersonCamera::FirstPersonCamera(Game& game, float fieldOfView, float aspectRatio, float nearPlaneDistance, float farPlaneDistance) :
+	FirstPersonCamera::FirstPersonCamera(Game& game, float fieldOfView, float aspectRatio, float nearPlaneDistance, float farPlaneDistance) :
 		PerspectiveCamera(game, fieldOfView, aspectRatio, nearPlaneDistance, farPlaneDistance),
 		mGamePad(nullptr), mKeyboard(nullptr), mMouse(nullptr), mMouseSensitivity(DefaultMouseSensitivity),
 		mRotationRate(DefaultRotationRate), mMovementRate(DefaultMovementRate)
-    {
-    }
+	{
+	}
 
 	GamePadComponent* FirstPersonCamera::GetGamePad() const
 	{
@@ -59,15 +59,15 @@ namespace Library
 		return mMouseSensitivity;
 	}
 
-    float& FirstPersonCamera::RotationRate()
-    {
-        return mRotationRate;
-    }
+	float& FirstPersonCamera::RotationRate()
+	{
+		return mRotationRate;
+	}
 
-    float& FirstPersonCamera::MovementRate()
-    {
-        return mMovementRate;
-    }
+	float& FirstPersonCamera::MovementRate()
+	{
+		return mMovementRate;
+	}
 
 	void FirstPersonCamera::Initialize()
 	{
@@ -78,21 +78,21 @@ namespace Library
 		Camera::Initialize();
 	}
 
-    void FirstPersonCamera::Update(const GameTime& gameTime)
-    {		
+	void FirstPersonCamera::Update(const GameTime& gameTime)
+	{
 		GamePad::State gamePadState;
 		if (IsGamePadConnected(gamePadState))
 		{
-			XMFLOAT2 movementAmount(gamePadState.thumbSticks.leftX, gamePadState.thumbSticks.leftY);
+			XMFLOAT3 movementAmount(gamePadState.thumbSticks.leftX, gamePadState.thumbSticks.leftY, 0.0f);
 			XMFLOAT2 rotationAmount(-gamePadState.thumbSticks.rightX, gamePadState.thumbSticks.rightY);
-			UpdatePosition(movementAmount, rotationAmount, gameTime);			
+			UpdatePosition(movementAmount, rotationAmount, gameTime);
 		}
 		else
 		{
 			bool positionChanged = false;
-			XMFLOAT2 movementAmount = Vector2Helper::Zero;
+			XMFLOAT3 movementAmount = Vector3Helper::Zero;
 			if (mKeyboard != nullptr)
-			{				
+			{
 				if (mKeyboard->IsKeyDown(Keys::W))
 				{
 					movementAmount.y = 2.0f;
@@ -113,11 +113,21 @@ namespace Library
 					movementAmount.x = 2.0f;
 					positionChanged = true;
 				}
+				if (mKeyboard->IsKeyDown(Keys::Q))
+				{
+					movementAmount.z = -2.0f;
+					positionChanged = true;
+				}
+				if (mKeyboard->IsKeyDown(Keys::E))
+				{
+					movementAmount.z = 2.0f;
+					positionChanged = true;
+				}
 			}
 
 			XMFLOAT2 rotationAmount = Vector2Helper::Zero;
 			if (mMouse != nullptr)
-			{				
+			{
 				if (mMouse->IsButtonHeldDown(MouseButtons::Left))
 				{
 					rotationAmount.x = -mMouse->X() * mMouseSensitivity;
@@ -132,14 +142,15 @@ namespace Library
 			}
 		}
 
-        Camera::Update(gameTime);
-    }
+		Camera::Update(gameTime);
+	}
 
-	void FirstPersonCamera::UpdatePosition(const XMFLOAT2& movementAmount, const XMFLOAT2& rotationAmount, const GameTime& gameTime)
+	void FirstPersonCamera::UpdatePosition(const XMFLOAT3& movementAmount, const XMFLOAT2& rotationAmount, const GameTime& gameTime)
 	{
 		float elapsedTime = gameTime.ElapsedGameTimeSeconds().count();
 		XMVECTOR rotationVector = XMLoadFloat2(&rotationAmount) * mRotationRate * elapsedTime;
 		XMVECTOR right = XMLoadFloat3(&mRight);
+		XMVECTOR up = XMLoadFloat3(&mUp);
 
 		XMMATRIX pitchMatrix = XMMatrixRotationAxis(right, XMVectorGetY(rotationVector));
 		XMMATRIX yawMatrix = XMMatrixRotationY(XMVectorGetX(rotationVector));
@@ -147,13 +158,16 @@ namespace Library
 		ApplyRotation(XMMatrixMultiply(pitchMatrix, yawMatrix));
 
 		XMVECTOR position = XMLoadFloat3(&mPosition);
-		XMVECTOR movement = XMLoadFloat2(&movementAmount) * mMovementRate * elapsedTime;
+		XMVECTOR movement = XMLoadFloat3(&movementAmount) * mMovementRate * elapsedTime;
 
 		XMVECTOR strafe = right * XMVectorGetX(movement);
 		position += strafe;
 
 		XMVECTOR forward = XMLoadFloat3(&mDirection) * XMVectorGetY(movement);
 		position += forward;
+
+		XMVECTOR climb = up * XMVectorGetZ(movement);
+		position += climb;
 
 		XMStoreFloat3(&mPosition, position);
 	}

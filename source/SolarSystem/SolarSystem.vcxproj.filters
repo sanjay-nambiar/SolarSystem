@@ -22,6 +22,7 @@
     <ClCompile Include="CelestialBody.cpp" />
     <ClCompile Include="ConfigData.cpp" />
     <ClCompile Include="CelestialLight.cpp" />
+    <ClCompile Include="Orbit.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="RenderingGame.h" />
@@ -31,6 +32,7 @@
     <ClInclude Include="ConfigData.h" />
     <ClInclude Include="CeletialLight.h" />
     <ClInclude Include="CeledtialBodyData.h" />
+    <ClInclude Include="Orbit.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Content\Models\PointLightProxy.obj.bin">

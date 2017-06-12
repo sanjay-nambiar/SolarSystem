@@ -14,7 +14,7 @@ namespace Rendering
 
 	SolarSystemDemo::SolarSystemDemo(Game & game, const shared_ptr<Camera>& camera) :
 		DrawableGameComponent(game, camera), mRootBody(nullptr), mSunLight(game, XMFLOAT3(0.0f, 0.0f, 0.0f), SunLightDefaultIntensity),
-		mRenderStateHelper(game), mKeyboard(nullptr), mIndexCount(0), mTextPosition(0.0f, 40.0f), mAnimationEnabled(false)
+		mRenderStateHelper(game), mKeyboard(nullptr), mIndexCount(0), mTextPosition(0.0f, 40.0f), mAnimationEnabled(false), mIsOrbitsEnabled(true)
 	{
 	}
 
@@ -100,26 +100,11 @@ namespace Rendering
 					textureView.ReleaseAndGetAddressOf()), "CreateWICTextureFromFile() failed.");
 				mColorTextures.insert({section.mTextureName, textureView});
 			}
-			CelestialBody body;
+			CelestialBody body(*mGame, mCamera);
 			body.SetParams(section);
 			mCelestialBodies.push_back(body);
 			bodiesMap.insert({section.mName, &mCelestialBodies.back()});
 			parents.push_back(section.mParent);
-		}
-
-		uint32_t index = 0;
-		for (auto& body : mCelestialBodies)
-		{
-			if (parents[index] == "")
-			{
-				mRootBody = &body;
-			}
-			else
-			{
-				CelestialBody* parent = bodiesMap.at(parents[index]);
-				parent->Adopt(body);
-			}
-			++index;
 		}
 
 		// Create text rendering helpers
@@ -138,6 +123,21 @@ namespace Rendering
 		// Update the vertex and pixel shader constant buffers
 		mGame->Direct3DDeviceContext()->UpdateSubresource(mVSCBufferPerFrame.Get(), 0, nullptr, &mVSCBufferPerFrameData, 0, 0);
 		mGame->Direct3DDeviceContext()->UpdateSubresource(mPSCBufferPerFrame.Get(), 0, nullptr, &mPSCBufferPerFrameData, 0, 0);
+
+		uint32_t index = 0;
+		for (auto& body : mCelestialBodies)
+		{
+			if (parents[index] == "")
+			{
+				mRootBody = &body;
+			}
+			else
+			{
+				CelestialBody* parent = bodiesMap.at(parents[index]);
+				parent->Adopt(body);
+			}
+			++index;
+		}
 	}
 
 	void SolarSystemDemo::Update(const GameTime& gameTime)
@@ -147,6 +147,11 @@ namespace Rendering
 			if (mKeyboard->WasKeyPressedThisFrame(Keys::Space))
 			{
 				ToggleAnimation();
+			}
+
+			if (mKeyboard->WasKeyPressedThisFrame(Keys::O))
+			{
+				mIsOrbitsEnabled = !mIsOrbitsEnabled;
 			}
 
 			bool updateCBuffersPerFrame = UpdateCelestialLight(gameTime);
@@ -182,7 +187,7 @@ namespace Rendering
 		direct3DDeviceContext->VSSetShader(mVertexShader.Get(), nullptr, 0);
 		direct3DDeviceContext->PSSetShader(mPixelShader.Get(), nullptr, 0);
 
-		for (const auto& body : mCelestialBodies)
+		for (auto& body : mCelestialBodies)
 		{
 			XMMATRIX worldMatrix = XMLoadFloat4x4(&body.WorldTransform());
 			XMMATRIX wvp = worldMatrix * mCamera->ViewProjectionMatrix();
@@ -208,6 +213,17 @@ namespace Rendering
 			direct3DDeviceContext->DrawIndexed(mIndexCount, 0, 0);
 		}
 
+		if (mIsOrbitsEnabled)
+		{
+			for (auto& body : mCelestialBodies)
+			{
+				if (body.GetOrbit())
+				{
+					body.GetOrbit()->Draw(gameTime);
+				}
+			}
+		}
+
 		// Draw help text
 		mRenderStateHelper.SaveAll();
 		mSpriteBatch->Begin();
@@ -216,6 +232,7 @@ namespace Rendering
 		helpLabel << L"Sun Light Intensity (+V/-B): " << mVSCBufferPerFrameData.LightIntensity << "\n";
 		helpLabel << L"Camera Movement Speed (+/-): " << static_cast<FirstPersonCamera*>(mCamera.get())->MovementRate() << "\n";
 		helpLabel << L"Toggle Animation (Space)" << "\n";
+		helpLabel << L"Toggle Orbits (O)" << "\n";
 
 		mSpriteFont->DrawString(mSpriteBatch.get(), helpLabel.str().c_str(), mTextPosition);
 		mSpriteBatch->End();

@@ -12,7 +12,8 @@ namespace Rendering
 	float CelestialBody::sOrbitalPeriod;
 	float CelestialBody::sDiameter;
 
-	CelestialBody::CelestialBody() :
+	CelestialBody::CelestialBody(Library::Game& game, const std::shared_ptr<Library::Camera>& camera) :
+		DrawableGameComponent(game, camera),
 		mWorldTransform(MatrixHelper::Identity), mParent(nullptr),
 		mRotationRate(0), mOrbitalRate(0), mRotationAngle(0), mOrbitalAngle(0),
 		mID(reinterpret_cast<std::uint64_t>(this))
@@ -42,11 +43,18 @@ namespace Rendering
 		float childDistanceFromOrigin = (sMeanDistance * body.mData.mMeanDistance) + (mData.mDiameter / 2) * 20;
 		XMStoreFloat4x4(&body.mTranslation, XMMatrixTranslation(childDistanceFromOrigin, 0, 0));
 		body.Initialize();
+		body.InitializeOrbit();
 	}
 
 	const CelestialBodyData& CelestialBody::Data() const
 	{
 		return mData;
+	}
+
+	float CelestialBody::Radius() const
+	{
+		XMFLOAT3 translation(mTranslation._41, mTranslation._42, mTranslation._43);
+		return XMVectorGetByIndex(XMVector3Length(XMLoadFloat3(&translation)), 1);
 	}
 
 	const XMFLOAT4& CelestialBody::Position() const
@@ -105,11 +113,25 @@ namespace Rendering
 		XMStoreFloat4x4(&mWorldTransform, transform);
 	}
 
+	std::shared_ptr<Orbit>& CelestialBody::GetOrbit()
+	{
+		return mOrbit;
+	}
+
 	void CelestialBody::SetConstantParams(float meanDistance, float rotationPeriod, float orbitalPeriod, float diameter)
 	{
 		sMeanDistance = meanDistance;
 		sRotationPeriod = rotationPeriod;
 		sOrbitalPeriod = orbitalPeriod;
 		sDiameter = diameter;
+	}
+
+	void CelestialBody::InitializeOrbit()
+	{
+		mOrbit = std::make_shared<Orbit>(*mGame, mCamera);
+		mOrbit->Initialize();
+		XMFLOAT3 translation(mTranslation._41, mTranslation._42, mTranslation._43);
+		float radius = XMVectorGetByIndex(XMVector3Length(XMLoadFloat3(&translation)), 0);
+		mOrbit->SetParams(radius, 10, mTranslation, XMFLOAT4(0.5f, 0.5f, 0.5f, 1.0f));
 	}
 }

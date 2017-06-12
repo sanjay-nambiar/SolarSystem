@@ -224,6 +224,7 @@ IF EXIST "$(ProjectDir)content" xcopy /E /Y "$(ProjectDir)Content" "$(OutDir)Con
     <ClCompile Include="CelestialBody.cpp" />
     <ClCompile Include="CelestialLight.cpp" />
     <ClCompile Include="ConfigData.cpp" />
+    <ClCompile Include="Orbit.cpp" />
     <ClCompile Include="pch.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Create</PrecompiledHeader>
@@ -239,6 +240,7 @@ IF EXIST "$(ProjectDir)content" xcopy /E /Y "$(ProjectDir)Content" "$(OutDir)Con
     <ClInclude Include="CelestialBody.h" />
     <ClInclude Include="CeletialLight.h" />
     <ClInclude Include="ConfigData.h" />
+    <ClInclude Include="Orbit.h" />
     <ClInclude Include="pch.h" />
     <ClInclude Include="SolarSystemDemo.h" />
     <ClInclude Include="RenderingGame.h" />

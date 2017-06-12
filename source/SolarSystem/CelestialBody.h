@@ -1,19 +1,21 @@
 #pragma once
 
 #include <DirectXMath.h>
+#include "Orbit.h"
 
 namespace Rendering
 {
-	class CelestialBody : Library::GameComponent
+	class CelestialBody : Library::DrawableGameComponent
 	{
 	public:
-		CelestialBody();
+		CelestialBody(Library::Game& game, const std::shared_ptr<Library::Camera>& camera);
 		virtual ~CelestialBody() = default;
 
 		void SetParams(const CelestialBodyData& data);
 		void Adopt(CelestialBody& body);
 
 		const CelestialBodyData& Data() const;
+		float Radius() const;
 		const DirectX::XMFLOAT4& Position() const;
 		const DirectX::XMFLOAT4X4& WorldTransform() const;
 		const DirectX::XMFLOAT4X4& WorldTranslation() const;
@@ -21,14 +23,18 @@ namespace Rendering
 
 		void Initialize() override;
 		void Update(const Library::GameTime& gameTime) override;
-
+		
+		std::shared_ptr<Orbit>& GetOrbit();
 		static void SetConstantParams(float meanDistance, float rotationPeriod, float orbitalPeriod, float diameter);
 	private:
+		void InitializeOrbit();
+
 		DirectX::XMFLOAT4X4 mWorldTransform;
 		DirectX::XMFLOAT4 mPosition;
 
 		std::vector<CelestialBody*> mChildBodies;
 		CelestialBody* mParent;
+		std::shared_ptr<Orbit> mOrbit;
 
 		CelestialBodyData mData;
 		float mRotationRate;
