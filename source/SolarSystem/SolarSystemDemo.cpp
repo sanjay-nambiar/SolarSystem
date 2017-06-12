@@ -229,10 +229,12 @@ namespace Rendering
 		mSpriteBatch->Begin();
 
 		wostringstream helpLabel;
+		helpLabel << L"Camera Controls(WASD QE + Left Mouse)" << "\n";
 		helpLabel << L"Sun Light Intensity (+V/-B): " << mVSCBufferPerFrameData.LightIntensity << "\n";
 		helpLabel << L"Camera Movement Speed (+/-): " << static_cast<FirstPersonCamera*>(mCamera.get())->MovementRate() << "\n";
 		helpLabel << L"Toggle Animation (Space)" << "\n";
 		helpLabel << L"Toggle Orbits (O)" << "\n";
+		helpLabel << L"Exit (Esc)" << "\n";
 
 		mSpriteFont->DrawString(mSpriteBatch.get(), helpLabel.str().c_str(), mTextPosition);
 		mSpriteBatch->End();

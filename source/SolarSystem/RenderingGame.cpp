@@ -34,8 +34,7 @@ namespace Rendering
 		mComponents.push_back(mGamePad);
 		mServices.AddService(GamePadComponent::TypeIdClass(), mGamePad.get());
 
-		mCamera = make_shared<FirstPersonCamera>(*this, PerspectiveCamera::DefaultFieldOfView, 16.0f/9.0f, Camera::DefaultNearPlaneDistance,
-			Camera::DefaultFarPlaneDistance * 10000000);
+		mCamera = make_shared<FirstPersonCamera>(*this, PerspectiveCamera::DefaultFieldOfView, 16.0f/9.0f, Camera::DefaultNearPlaneDistance, FLT_MAX);
 		mComponents.push_back(mCamera);
 		mServices.AddService(Camera::TypeIdClass(), mCamera.get());
 

@@ -20,6 +20,7 @@
 #include <codecvt>
 #include <algorithm>
 #include <functional>
+#include <limits>
 
 #if defined(DEBUG) || defined(_DEBUG)
 #define _CRTDBG_MAP_ALLOC
