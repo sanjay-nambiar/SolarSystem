@@ -45,5 +45,6 @@ namespace Rendering
 		std::shared_ptr<Library::FpsComponent> mFpsComponent;
 		std::shared_ptr<Library::FirstPersonCamera> mCamera;
 		std::shared_ptr<SolarSystemDemo> mSolarSystemDemo;
+		std::shared_ptr<Library::Skybox> mSkybox;
 	};
 }
