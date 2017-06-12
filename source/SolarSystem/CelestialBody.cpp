@@ -86,6 +86,13 @@ namespace Rendering
 		transform = XMMatrixMultiply(transform, XMMatrixRotationY(mRotationAngle));
 		transform = XMMatrixMultiply(transform, XMMatrixRotationZ(XMConvertToRadians(mData.mAxialTilt)));
 		transform = XMMatrixMultiply(transform, XMLoadFloat4x4(&mTranslation));
+		if (mParent != nullptr)
+		{
+			XMFLOAT4 origin(0.0f, 0.0f, 0.0f, 1.0f);
+			XMVECTOR position = XMLoadFloat4(&origin);
+			XMVECTOR transformed = XMVector4Transform(position, XMLoadFloat4x4(&mParent->WorldTransform()));
+			transform = XMMatrixMultiply(transform, XMMatrixTranslationFromVector(transformed));
+		}
 		XMStoreFloat4x4(&mWorldTransform, transform);
 	}
 

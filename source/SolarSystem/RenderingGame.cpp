@@ -40,7 +40,7 @@ namespace Rendering
 		mServices.AddService(Camera::TypeIdClass(), mCamera.get());
 
 		mSkybox = make_shared<Skybox>(*this, mCamera, L"Content\\Textures\\Skybox.dds", 500.0f);
-		//mComponents.push_back(mSkybox);
+		mComponents.push_back(mSkybox);
 
 		mSolarSystemDemo = make_shared<SolarSystemDemo>(*this, mCamera);
 		mComponents.push_back(mSolarSystemDemo);

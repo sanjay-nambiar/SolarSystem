@@ -68,14 +68,15 @@ namespace Rendering
 		Update(GameTime());
 
 		mVertexBuffer.Reset();
-		mVertexCount = static_cast<std::uint32_t>(ceil((2 * XM_PI * mRadius) * vertexPerUnit));
+		float maxAngle = (XM_2PI + XM_PIDIV4/4);
+		mVertexCount = static_cast<std::uint32_t>(ceil(maxAngle * mRadius * vertexPerUnit));
 		ID3D11Device* direct3DDevice = GetGame()->Direct3DDevice();
 		int size = sizeof(VertexPositionColor) * mVertexCount;
 		std::unique_ptr<VertexPositionColor> vertexData(new VertexPositionColor[mVertexCount]);
 		VertexPositionColor* vertices = vertexData.get();
 
 		float angle = 0;
-		float angleIncrement = (XM_2PI / mVertexCount);
+		float angleIncrement = (maxAngle / mVertexCount);
 		for (std::uint32_t index = 0; index < mVertexCount; ++index)
 		{
 			vertices[index] = VertexPositionColor(XMFLOAT4(mRadius * cos(angle), 0.0f, mRadius * sin(angle), 1.0f), mColor);
