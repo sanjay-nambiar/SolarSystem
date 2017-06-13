@@ -6,6 +6,7 @@ namespace Rendering
 	struct CelestialBodyData
 	{
 		std::string mName;
+		std::uint32_t mOrdinal;
 		std::string mTextureName;
 		float mMeanDistance;
 		float mRotationPeriod;

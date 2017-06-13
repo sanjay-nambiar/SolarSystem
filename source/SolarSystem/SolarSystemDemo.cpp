@@ -14,7 +14,8 @@ namespace Rendering
 
 	SolarSystemDemo::SolarSystemDemo(Game & game, const shared_ptr<Camera>& camera) :
 		DrawableGameComponent(game, camera), mRootBody(nullptr), mSunLight(game, XMFLOAT3(0.0f, 0.0f, 0.0f), SunLightDefaultIntensity),
-		mRenderStateHelper(game), mKeyboard(nullptr), mIndexCount(0), mTextPosition(0.0f, 40.0f), mAnimationEnabled(false), mIsOrbitsEnabled(true), mActiveBodyIndex(0)
+		mRenderStateHelper(game), mKeyboard(nullptr), mIndexCount(0), mTextPosition(0.0f, 40.0f), mAnimationEnabled(false), mIsOrbitsEnabled(true),
+		mActiveBodyIndex(0), mIsCameraLocked(false), mIsInfoDisplayOn(true)
 	{
 	}
 
@@ -89,9 +90,8 @@ namespace Rendering
 		vector<string> parents;
 		mCelestialBodies.reserve(mConfigData.GetAllData().size());
 		// Load textures for the color and specular maps
-		for (const auto& sectionEntry : mConfigData.GetAllData())
+		for (const auto& section : mConfigData.GetAllData())
 		{
-			const auto& section = sectionEntry.second;
 			if (mColorTextures.find(section.mTextureName) == mColorTextures.end())
 			{
 				wstring textureName = L"Content\\Textures\\" + Utility::ToWideString(section.mTextureName);
@@ -142,6 +142,7 @@ namespace Rendering
 
 	void SolarSystemDemo::Update(const GameTime& gameTime)
 	{
+		bool shouldUpdateCamera = false;
 		if (mKeyboard != nullptr)
 		{
 			if (mKeyboard->WasKeyPressedThisFrame(Keys::Space))
@@ -154,31 +155,35 @@ namespace Rendering
 				mIsOrbitsEnabled = !mIsOrbitsEnabled;
 			}
 
-			bool shouldUpdateCamera = false;
-			if (mKeyboard->WasKeyPressedThisFrame(Keys::Left) && mActiveBodyIndex > 0)
-			{
-				--mActiveBodyIndex;
-				shouldUpdateCamera = true;
-			}
-
-			if (mKeyboard->WasKeyPressedThisFrame(Keys::Right) && mActiveBodyIndex < (mCelestialBodies.size() - 1))
-			{
-				++mActiveBodyIndex;
-				shouldUpdateCamera = true;
-			}
-
 			bool updateCBuffersPerFrame = UpdateCelestialLight(gameTime);
 			if (updateCBuffersPerFrame)
 			{
 				mGame->Direct3DDeviceContext()->UpdateSubresource(mVSCBufferPerFrame.Get(), 0, nullptr, &mVSCBufferPerFrameData, 0, 0);
 			}
 
-			if (shouldUpdateCamera)
+			if (mKeyboard->WasKeyPressedThisFrame(Keys::Left))
 			{
-				XMFLOAT4 origin(0.0f, 0.0f, 0.0f, 1.0f);
-				XMVECTOR position = XMLoadFloat4(&origin);
-				XMVECTOR transformed = XMVector4Transform(position, XMLoadFloat4x4(&mCelestialBodies[mActiveBodyIndex].WorldTransform()));
-				mCamera->SetPosition(transformed);
+				mActiveBodyIndex = (mActiveBodyIndex == 0) ? (mCelestialBodies.size() - 1) : (mActiveBodyIndex - 1);
+				shouldUpdateCamera = true;
+				mCamera->Reset();
+			}
+
+			if (mKeyboard->WasKeyPressedThisFrame(Keys::Right))
+			{
+				mActiveBodyIndex = (mActiveBodyIndex + 1) % mCelestialBodies.size();
+				shouldUpdateCamera = true;
+				mCamera->Reset();
+			}
+
+			if (mKeyboard->WasKeyPressedThisFrame(Keys::L))
+			{
+				mIsCameraLocked = !mIsCameraLocked;
+				mCamera->Reset();
+			}
+
+			if (mKeyboard->WasKeyPressedThisFrame(Keys::I))
+			{
+				mIsInfoDisplayOn = !mIsInfoDisplayOn;
 			}
 		}
 
@@ -195,6 +200,11 @@ namespace Rendering
 				}
 				body->Update(gameTime);
 			}
+		}
+
+		if (shouldUpdateCamera || mIsCameraLocked)
+		{
+			UpdateCameraPosition();
 		}
 	}
 
@@ -252,23 +262,29 @@ namespace Rendering
 			}
 		}
 
-		// Draw help text
-		mRenderStateHelper.SaveAll();
-		mSpriteBatch->Begin();
+		if (mIsInfoDisplayOn)
+		{
+			// Draw help text
+			mRenderStateHelper.SaveAll();
+			mSpriteBatch->Begin();
 
-		wostringstream helpLabel;
-		helpLabel << L"Active Body: " << Utility::ToWideString(mCelestialBodies[mActiveBodyIndex].Data().mName) << "\n";
-		helpLabel << L"Camera Controls(WASD QE + Left Mouse)" << "\n";
-		helpLabel << L"Sun Light Intensity (+V/-B): " << mVSCBufferPerFrameData.LightIntensity << "\n";
-		helpLabel << L"Camera Movement Speed (+/-): " << static_cast<FirstPersonCamera*>(mCamera.get())->MovementRate() << "\n";
-		helpLabel << L"Toggle Animation (Space)" << "\n";
-		helpLabel << L"Toggle Orbits (O)" << "\n";
-		helpLabel << L"Toggle Skybox (Y)" << "\n";
-		helpLabel << L"Exit (Esc)" << "\n";
+			wostringstream helpLabel;
+			helpLabel << L"Active Body: " << Utility::ToWideString(mCelestialBodies[mActiveBodyIndex].Data().mName) << "\n";
+			helpLabel << L"Camera Controls(WASD QE + Left Mouse)" << "\n";
+			helpLabel << L"Sun Light Intensity (+V/-B): " << mVSCBufferPerFrameData.LightIntensity << "\n";
+			helpLabel << L"Camera Movement Speed (+/-): " << static_cast<FirstPersonCamera*>(mCamera.get())->MovementRate() << "\n";
+			helpLabel << L"Toggle Animation (Space)" << "\n";
+			helpLabel << L"Toggle Orbits (O)" << "\n";
+			helpLabel << L"Toggle Skybox (Y)" << "\n";
+			helpLabel << L"Next Body / Previous Body (Left / Right)" << "\n";
+			helpLabel << L"Toggle Camera Locking (L)" << "\n";
+			helpLabel << L"Toggle Info Display (I)" << "\n";
+			helpLabel << L"Exit (Esc)" << "\n";
 
-		mSpriteFont->DrawString(mSpriteBatch.get(), helpLabel.str().c_str(), mTextPosition);
-		mSpriteBatch->End();
-		mRenderStateHelper.RestoreAll();
+			mSpriteFont->DrawString(mSpriteBatch.get(), helpLabel.str().c_str(), mTextPosition);
+			mSpriteBatch->End();
+			mRenderStateHelper.RestoreAll();
+		}
 	}
 
 	void SolarSystemDemo::CreateVertexBuffer(const Mesh& mesh, ID3D11Buffer** vertexBuffer) const
@@ -326,5 +342,15 @@ namespace Rendering
 		}
 
 		return updateCBuffer;
+	}
+
+	void SolarSystemDemo::UpdateCameraPosition()
+	{
+		CelestialBody& body = mCelestialBodies[mActiveBodyIndex];
+		XMFLOAT4 origin(0.0f, 0.0f, 0.0f, 1.0f);
+		XMVECTOR originVector = XMLoadFloat4(&origin);
+		XMVECTOR bodyPosition = XMVector4Transform(originVector, XMLoadFloat4x4(&body.WorldTransform()));
+		XMFLOAT4 offset(0.0f, 0.0f, body.Data().mDiameter * 20.0f, 1.0f);
+		mCamera->SetPosition(bodyPosition + XMLoadFloat4(&offset));
 	}
 }

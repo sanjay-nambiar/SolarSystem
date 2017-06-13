@@ -29,6 +29,8 @@ namespace Rendering
 		static void SetConstantParams(float meanDistance, float rotationPeriod, float orbitalPeriod, float diameter);
 	private:
 		void InitializeOrbit();
+		void UpdateWorldMatrix(const DirectX::XMFLOAT4X4& transform);
+		void UpdateWorldMatrix(const DirectX::XMMATRIX& transform);
 
 		DirectX::XMFLOAT4X4 mWorldTransform;
 		DirectX::XMFLOAT4 mPosition;
@@ -51,5 +53,11 @@ namespace Rendering
 		static float sRotationPeriod;
 		static float sOrbitalPeriod;
 		static float sDiameter;
+
+	public:
+		static float MeanDistance();
+		static float RotationPeriod();
+		static float OrbitalPeriod();
+		static float Diameter();
 	};
 }

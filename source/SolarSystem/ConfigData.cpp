@@ -23,10 +23,17 @@ namespace Rendering
 
 	const CelestialBodyData& ConfigData::GetCelestialBodyData(const std::string& sectionName) const
 	{
-		return mConfigData.at(sectionName);
+		for (auto& data : mConfigData)
+		{
+			if (data.mName == sectionName)
+			{
+				return data;
+			}
+		}
+		throw std::runtime_error("Invalid section name");
 	}
 
-	const std::unordered_map<std::string, CelestialBodyData>& ConfigData::GetAllData() const
+	const std::vector<CelestialBodyData>& ConfigData::GetAllData() const
 	{
 		return mConfigData;
 	}
@@ -72,6 +79,7 @@ namespace Rendering
 			{
 				mConstantsData = {
 					sectionEntry.first,
+					std::stoul(section.at("Ordinal")),
 					section.at("Texture"),
 					std::stof(section.at("MeanDistance")),
 					std::stof(section.at("RotationPeriod")),
@@ -85,8 +93,9 @@ namespace Rendering
 			}
 			else
 			{
-				mConfigData.insert({sectionEntry.first,{
+				mConfigData.push_back({
 					sectionEntry.first,
+					std::stoul(section.at("Ordinal")),
 					section.at("Texture"),
 					std::stof(section.at("MeanDistance")),
 					std::stof(section.at("RotationPeriod")),
@@ -96,8 +105,12 @@ namespace Rendering
 					std::stof(section.at("Albeido")),	// reflectance
 					std::stof(section.at("IsLit")),
 					section.at("Parent")
-				}});
+				});
 			}
 		}
+		std::sort(mConfigData.begin(), mConfigData.end(), [](const CelestialBodyData& a, const CelestialBodyData& b)
+		{
+			return a.mOrdinal <= b.mOrdinal;
+		});
 	}
 }

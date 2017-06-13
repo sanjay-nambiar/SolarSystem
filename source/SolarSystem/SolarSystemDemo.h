@@ -96,6 +96,7 @@ namespace Rendering
 		void CreateVertexBuffer(const Library::Mesh& mesh, ID3D11Buffer** vertexBuffer) const;
 		void ToggleAnimation();
 		bool UpdateCelestialLight(const Library::GameTime& gameTime);
+		void UpdateCameraPosition();
 
 		static const float LightModulationRate;
 		static const float SunLightDefaultIntensity;
@@ -129,5 +130,7 @@ namespace Rendering
 		std::uint32_t mActiveBodyIndex;
 		bool mAnimationEnabled;
 		bool mIsOrbitsEnabled;
+		bool mIsCameraLocked;
+		bool mIsInfoDisplayOn;
 	};
 }

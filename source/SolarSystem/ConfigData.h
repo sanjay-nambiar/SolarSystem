@@ -12,14 +12,14 @@ namespace Rendering
 		void LoadConfigData(const std::string& filename);
 		const CelestialBodyData& GetConstantsData() const;
 		const CelestialBodyData& GetCelestialBodyData(const std::string& sectionName) const;
-		const std::unordered_map<std::string, CelestialBodyData>& GetAllData() const;
+		const std::vector<CelestialBodyData>& GetAllData() const;
 	private:
 		typedef std::unordered_map<std::string, std::unordered_map<std::string, std::string>> ConfigDataMapType;
 
 		static void PopulateDataMap(const std::string& filename, ConfigDataMapType& dataMap);
 		void PopulateDataObject(const ConfigDataMapType& configDataMap);
 
-		std::unordered_map<std::string, CelestialBodyData> mConfigData;
+		std::vector<CelestialBodyData> mConfigData;
 		CelestialBodyData mConstantsData;
 
 		static const std::regex CommentPattern;
