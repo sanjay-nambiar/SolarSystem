@@ -163,7 +163,7 @@ namespace Rendering
 
 			if (mKeyboard->WasKeyPressedThisFrame(Keys::Left))
 			{
-				mActiveBodyIndex = (mActiveBodyIndex == 0) ? (mCelestialBodies.size() - 1) : (mActiveBodyIndex - 1);
+				mActiveBodyIndex = (mActiveBodyIndex == 0) ? static_cast<std::uint32_t>(mCelestialBodies.size() - 1) : (mActiveBodyIndex - 1);
 				shouldUpdateCamera = true;
 				mCamera->Reset();
 			}
