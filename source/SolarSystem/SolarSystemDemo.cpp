@@ -14,7 +14,7 @@ namespace Rendering
 
 	SolarSystemDemo::SolarSystemDemo(Game & game, const shared_ptr<Camera>& camera) :
 		DrawableGameComponent(game, camera), mRootBody(nullptr), mSunLight(game, XMFLOAT3(0.0f, 0.0f, 0.0f), SunLightDefaultIntensity),
-		mRenderStateHelper(game), mKeyboard(nullptr), mIndexCount(0), mTextPosition(0.0f, 40.0f), mAnimationEnabled(false), mIsOrbitsEnabled(true)
+		mRenderStateHelper(game), mKeyboard(nullptr), mIndexCount(0), mTextPosition(0.0f, 40.0f), mAnimationEnabled(false), mIsOrbitsEnabled(true), mActiveBodyIndex(0)
 	{
 	}
 
@@ -154,18 +154,46 @@ namespace Rendering
 				mIsOrbitsEnabled = !mIsOrbitsEnabled;
 			}
 
+			bool shouldUpdateCamera = false;
+			if (mKeyboard->WasKeyPressedThisFrame(Keys::Left) && mActiveBodyIndex > 0)
+			{
+				--mActiveBodyIndex;
+				shouldUpdateCamera = true;
+			}
+
+			if (mKeyboard->WasKeyPressedThisFrame(Keys::Right) && mActiveBodyIndex < (mCelestialBodies.size() - 1))
+			{
+				++mActiveBodyIndex;
+				shouldUpdateCamera = true;
+			}
+
 			bool updateCBuffersPerFrame = UpdateCelestialLight(gameTime);
 			if (updateCBuffersPerFrame)
 			{
 				mGame->Direct3DDeviceContext()->UpdateSubresource(mVSCBufferPerFrame.Get(), 0, nullptr, &mVSCBufferPerFrameData, 0, 0);
 			}
+
+			if (shouldUpdateCamera)
+			{
+				XMFLOAT4 origin(0.0f, 0.0f, 0.0f, 1.0f);
+				XMVECTOR position = XMLoadFloat4(&origin);
+				XMVECTOR transformed = XMVector4Transform(position, XMLoadFloat4x4(&mCelestialBodies[mActiveBodyIndex].WorldTransform()));
+				mCamera->SetPosition(transformed);
+			}
 		}
 
+		std::vector<CelestialBody*> stack = { mRootBody };
 		if (mAnimationEnabled)
 		{
-			for (auto& body : mCelestialBodies)
+			while (!stack.empty())
 			{
-				body.Update(gameTime);
+				CelestialBody* body = stack.back();
+				stack.pop_back();
+				for(auto& child : body->Children())
+				{
+					stack.push_back(child);
+				}
+				body->Update(gameTime);
 			}
 		}
 	}
@@ -229,6 +257,7 @@ namespace Rendering
 		mSpriteBatch->Begin();
 
 		wostringstream helpLabel;
+		helpLabel << L"Active Body: " << Utility::ToWideString(mCelestialBodies[mActiveBodyIndex].Data().mName) << "\n";
 		helpLabel << L"Camera Controls(WASD QE + Left Mouse)" << "\n";
 		helpLabel << L"Sun Light Intensity (+V/-B): " << mVSCBufferPerFrameData.LightIntensity << "\n";
 		helpLabel << L"Camera Movement Speed (+/-): " << static_cast<FirstPersonCamera*>(mCamera.get())->MovementRate() << "\n";

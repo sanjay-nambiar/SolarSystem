@@ -126,6 +126,7 @@ namespace Rendering
 		std::unique_ptr<DirectX::SpriteFont> mSpriteFont;
 		DirectX::XMFLOAT2 mTextPosition;
 		
+		std::uint32_t mActiveBodyIndex;
 		bool mAnimationEnabled;
 		bool mIsOrbitsEnabled;
 	};

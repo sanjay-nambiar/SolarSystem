@@ -77,6 +77,11 @@ namespace Rendering
 		return mParent;
 	}
 
+	const std::vector<CelestialBody*>& CelestialBody::Children() const
+	{
+		return mChildBodies;
+	}
+
 	void CelestialBody::Initialize()
 	{
 		GameComponent::Initialize();
